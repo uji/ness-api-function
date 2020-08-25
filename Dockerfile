@@ -1,0 +1,8 @@
+FROM golang:1.15
+
+COPY . /repo
+WORKDIR /repo
+
+ENV GITHUB_USER_NAME ""
+ENV GITHUB_TOKEN ""
+ENV GITHUB_EMAIL ""
