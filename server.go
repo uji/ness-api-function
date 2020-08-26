@@ -16,18 +16,18 @@ import (
 var muxAdpt *gorillamux.GorillaMuxAdapter
 
 func init() {
-  r := mux.NewRouter()
-  schm := generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}})
+	r := mux.NewRouter()
+	schm := generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}})
 	srv := handler.NewDefaultServer(schm)
 
 	r.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	r.Handle("/query", srv)
 
-  muxAdpt = gorillamux.New(r)
+	muxAdpt = gorillamux.New(r)
 }
 
 func handle(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-  return muxAdpt.Proxy(req)
+	return muxAdpt.Proxy(req)
 }
 
 func main() {
