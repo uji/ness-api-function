@@ -6,10 +6,30 @@ services:
     volumes:
       - ness-api-function:/repo
     environment:
+      PORT: ${PORT}
       GITHUB_USER_NAME: ${GITHUB_USER_NAME}
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       GITHUB_EMAIL: ${GITHUB_EMAIL}
+    ports:
+      - 3000:3000
     tty: true
+  db:
+    image: postgres:11-alpine
+    command: postgres -c log_destination=stderr -c log_statement=all -c log_connections=on -c log_disconnections=on
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - 5000:5432
+    volumes:
+      - "ness-api-data:/var/lib/postgresql/data"
+
 volumes:
   ness-api-function:
     external: true
+  ness-api-data:
+    external: true
+networks:
+  default:
+    external:
+      name: ness-api-network
