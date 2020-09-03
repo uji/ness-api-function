@@ -5,18 +5,41 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
 	"example.com/ness-api-function/graph/generated"
 	"example.com/ness-api-function/graph/model"
 )
 
-func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) CreateThread(ctx context.Context, input model.NewThread) (*model.Thread, error) {
+	return &model.Thread{
+		ID:          "threadID",
+		Title:       "title",
+		Description: "description",
+		Closed:      false,
+	}, nil
 }
 
-func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) Threads(ctx context.Context) ([]*model.Thread, error) {
+	return []*model.Thread{
+		{
+			ID:          "threadID1",
+			Title:       "title1",
+			Description: "description1",
+			Closed:      false,
+		},
+		{
+			ID:          "threadID2",
+			Title:       "title2",
+			Description: "description2",
+			Closed:      false,
+		},
+		{
+			ID:          "threadID3",
+			Title:       "title3",
+			Description: "description3",
+			Closed:      false,
+		},
+	}, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.
