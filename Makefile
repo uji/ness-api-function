@@ -8,6 +8,13 @@ clean:
 	make down
 	docker volume rm ness-api-function
 
+up:
+	docker-compose up -d
+	docker-compose exec app sh entrypoint.sh
+
+down:
+	docker-compose down
+
 start:
 	docker-compose start
 	docker-compose exec app sh entrypoint.sh
