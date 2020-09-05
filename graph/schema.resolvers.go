@@ -12,10 +12,16 @@ import (
 )
 
 func (r *mutationResolver) CreateThread(ctx context.Context, input model.NewThread) (*model.Thread, error) {
+	res, err := r.thread.Create(ctx, thread.CreateRequest{
+		Title: input.Title,
+	})
+	if err != nil {
+		return nil, err
+	}
 	return &model.Thread{
-		ID:     "threadID",
-		Title:  "title",
-		Closed: false,
+		ID:     res.ID(),
+		Title:  res.Title(),
+		Closed: res.Closed(),
 	}, nil
 }
 

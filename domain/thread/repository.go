@@ -2,6 +2,8 @@ package thread
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -65,5 +67,53 @@ offset :offset
 }
 
 func (p *psqlRepository) create(ctx context.Context, req repositoryCreateRequest) (Thread, error) {
-	return Thread{}, nil
+	query := `
+insert into threads (
+	title
+)
+values (
+	:title
+)
+returning
+		uuid
+	, title
+	, closed
+	`
+
+	args := struct {
+		Title string
+	}{
+		Title: req.title,
+	}
+
+	rslt := struct {
+		UUID   string `db:"uuid"`
+		Title  string `db:"title"`
+		Closed bool   `db:"closed"`
+	}{}
+
+	tx, err := p.db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return Thread{}, err
+	}
+	defer tx.Rollback()
+
+	rows, err := p.db.NamedQueryContext(ctx, query, &args)
+	if err != nil {
+		return Thread{}, err
+	}
+	if !rows.Next() {
+		return Thread{}, errors.New("failed")
+	}
+	if err := rows.StructScan(&rslt); err != nil {
+		return Thread{}, err
+	}
+
+	tx.Commit()
+
+	return Thread{
+		id:     rslt.UUID,
+		title:  rslt.Title,
+		closed: rslt.Closed,
+	}, nil
 }

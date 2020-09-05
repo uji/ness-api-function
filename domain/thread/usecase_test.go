@@ -66,3 +66,55 @@ func TestUsecaseGet(t *testing.T) {
 		})
 	}
 }
+
+func TestUsecaseCreate(t *testing.T) {
+	cases := []struct {
+		name          string
+		title         string
+		err           error
+		useRepository bool
+	}{
+		{"normal", "thread1", nil, true},
+		{"blank title", "", ErrorCreate01, false},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			repo := NewMockrepository(ctrl)
+			thrd := Thread{
+				id:     "thread1",
+				title:  "thread1",
+				closed: false,
+			}
+			if c.useRepository {
+				repo.EXPECT().create(
+					context.Background(),
+					repositoryCreateRequest{
+						title: c.title,
+					},
+				).Return(thrd, nil)
+			}
+
+			uc := NewUsecase(repo)
+			res, err := uc.Create(context.Background(), CreateRequest{
+				Title: c.title,
+			})
+			if err != c.err {
+				t.Fatal(err)
+			}
+			if err != nil {
+				return
+			}
+
+			opts := cmp.Options{
+				cmp.AllowUnexported(Thread{}),
+			}
+			if diff := cmp.Diff(thrd, res, opts); diff != "" {
+				t.Fatal(res)
+			}
+		})
+	}
+}

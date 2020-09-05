@@ -2,7 +2,6 @@ package thread
 
 import (
 	"context"
-	"errors"
 )
 
 const (
@@ -65,7 +64,7 @@ type (
 
 func (u *Usecase) Create(ctx context.Context, req CreateRequest) (Thread, error) {
 	if req.Title == "" {
-		return Thread{}, errors.New("title is blank")
+		return Thread{}, ErrorCreate01
 	}
 	return u.repo.create(ctx, repositoryCreateRequest{
 		title: req.Title,
