@@ -5,7 +5,6 @@
 type Thread {
   id: String!
   title: String!
-  description: String!
   closed: Boolean!
 }
 
@@ -15,7 +14,6 @@ type Query {
 
 input NewThread {
   title: String!
-  description: String!
 }
 
 type Mutation {

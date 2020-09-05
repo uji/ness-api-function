@@ -12,32 +12,28 @@ import (
 
 func (r *mutationResolver) CreateThread(ctx context.Context, input model.NewThread) (*model.Thread, error) {
 	return &model.Thread{
-		ID:          "threadID",
-		Title:       "title",
-		Description: "description",
-		Closed:      false,
+		ID:     "threadID",
+		Title:  "title",
+		Closed: false,
 	}, nil
 }
 
 func (r *queryResolver) Threads(ctx context.Context) ([]*model.Thread, error) {
 	return []*model.Thread{
 		{
-			ID:          "threadID1",
-			Title:       "title1",
-			Description: "description1",
-			Closed:      false,
+			ID:     "threadID1",
+			Title:  "title1",
+			Closed: false,
 		},
 		{
-			ID:          "threadID2",
-			Title:       "title2",
-			Description: "description2",
-			Closed:      false,
+			ID:     "threadID2",
+			Title:  "title2",
+			Closed: false,
 		},
 		{
-			ID:          "threadID3",
-			Title:       "title3",
-			Description: "description3",
-			Closed:      false,
+			ID:     "threadID3",
+			Title:  "title3",
+			Closed: false,
 		},
 	}, nil
 }

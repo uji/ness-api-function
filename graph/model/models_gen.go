@@ -3,13 +3,11 @@
 package model
 
 type NewThread struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
+	Title string `json:"title"`
 }
 
 type Thread struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Closed      bool   `json:"closed"`
+	ID     string `json:"id"`
+	Title  string `json:"title"`
+	Closed bool   `json:"closed"`
 }

@@ -52,10 +52,9 @@ type ComplexityRoot struct {
 	}
 
 	Thread struct {
-		Closed      func(childComplexity int) int
-		Description func(childComplexity int) int
-		ID          func(childComplexity int) int
-		Title       func(childComplexity int) int
+		Closed func(childComplexity int) int
+		ID     func(childComplexity int) int
+		Title  func(childComplexity int) int
 	}
 }
 
@@ -106,13 +105,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Thread.Closed(childComplexity), true
-
-	case "Thread.description":
-		if e.complexity.Thread.Description == nil {
-			break
-		}
-
-		return e.complexity.Thread.Description(childComplexity), true
 
 	case "Thread.id":
 		if e.complexity.Thread.ID == nil {
@@ -199,7 +191,6 @@ var sources = []*ast.Source{
 type Thread {
   id: String!
   title: String!
-  description: String!
   closed: Boolean!
 }
 
@@ -209,7 +200,6 @@ type Query {
 
 input NewThread {
   title: String!
-  description: String!
 }
 
 type Mutation {
@@ -487,40 +477,6 @@ func (ec *executionContext) _Thread_title(ctx context.Context, field graphql.Col
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Title, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Thread_description(ctx context.Context, field graphql.CollectedField, obj *model.Thread) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "Thread",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Description, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1640,14 +1596,6 @@ func (ec *executionContext) unmarshalInputNewThread(ctx context.Context, obj int
 			if err != nil {
 				return it, err
 			}
-		case "description":
-			var err error
-
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("description"))
-			it.Description, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		}
 	}
 
@@ -1755,11 +1703,6 @@ func (ec *executionContext) _Thread(ctx context.Context, sel ast.SelectionSet, o
 			}
 		case "title":
 			out.Values[i] = ec._Thread_title(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "description":
-			out.Values[i] = ec._Thread_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
