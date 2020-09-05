@@ -9,4 +9,6 @@ import (
 	_ "github.com/rubenv/sql-migrate"
 	_ "github.com/rubenv/sql-migrate/sql-migrate"
 	_ "github.com/rubenv/sql-migrate/sqlparse"
+	_ "github.com/xo/xo"
+	_ "golang.org/x/tools/cmd/goimports"
 )
