@@ -24,3 +24,6 @@ stop:
 
 build:
 	GOOS=linux GOARCH=amd64 go build -o bin/main
+
+mock:
+	mockgen -source ./domain/thread/usecase.go -destination ./domain/thread/usecase_mock.go -package thread
