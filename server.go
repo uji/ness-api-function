@@ -3,9 +3,7 @@ package main
 import (
 	"context"
 
-	"example.com/ness-api-function/graph"
-	"example.com/ness-api-function/graph/generated"
-	"github.com/99designs/gqlgen/graphql/handler"
+	"example.com/ness-api-function/registory"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -17,8 +15,7 @@ var muxAdpt *gorillamux.GorillaMuxAdapter
 
 func init() {
 	r := mux.NewRouter()
-	schm := generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}})
-	srv := handler.NewDefaultServer(schm)
+	srv := registory.NewRegisterdServer()
 
 	r.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	r.Handle("/query", srv)

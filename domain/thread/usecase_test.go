@@ -19,6 +19,7 @@ func TestUsecaseGet(t *testing.T) {
 		{"normal", 5, 5, 5, 5},
 		{"limit too small", -1, 5, 1, 5},
 		{"limit too big", 101, 5, 100, 5},
+		{"offset too small", 5, -1, 5, 0},
 	}
 
 	for _, c := range cases {
@@ -48,7 +49,7 @@ func TestUsecaseGet(t *testing.T) {
 			).Return(threads, nil)
 
 			uc := NewUsecase(repo)
-			res, err := uc.Get(context.Background(), UsecaseGetRequest{
+			res, err := uc.Get(context.Background(), GetRequest{
 				Limit:  c.reqLimit,
 				Offset: c.reqOffset,
 			})

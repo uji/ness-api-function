@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 
+	"example.com/ness-api-function/domain/thread"
 	"example.com/ness-api-function/graph/generated"
 	"example.com/ness-api-function/graph/model"
 )
@@ -19,23 +20,22 @@ func (r *mutationResolver) CreateThread(ctx context.Context, input model.NewThre
 }
 
 func (r *queryResolver) Threads(ctx context.Context) ([]*model.Thread, error) {
-	return []*model.Thread{
-		{
-			ID:     "threadID1",
-			Title:  "title1",
-			Closed: false,
-		},
-		{
-			ID:     "threadID2",
-			Title:  "title2",
-			Closed: false,
-		},
-		{
-			ID:     "threadID3",
-			Title:  "title3",
-			Closed: false,
-		},
-	}, nil
+	thrds, err := r.thread.Get(ctx, thread.GetRequest{
+		Limit:  100,
+		Offset: 0,
+	})
+	if err != nil {
+		return nil, err
+	}
+	res := make([]*model.Thread, len(thrds))
+	for i, thrd := range thrds {
+		res[i] = &model.Thread{
+			ID:     thrd.ID(),
+			Title:  thrd.Title(),
+			Closed: thrd.Closed(),
+		}
+	}
+	return res, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

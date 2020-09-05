@@ -5,9 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"example.com/ness-api-function/graph"
-	"example.com/ness-api-function/graph/generated"
-	"github.com/99designs/gqlgen/graphql/handler"
+	"example.com/ness-api-function/registory"
 	"github.com/99designs/gqlgen/graphql/playground"
 )
 
@@ -19,8 +17,7 @@ func main() {
 		port = defaultPort
 	}
 
-	schm := generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}})
-	srv := handler.NewDefaultServer(schm)
+	srv := registory.NewRegisterdServer()
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)

@@ -47,3 +47,18 @@ func (mr *MockrepositoryMockRecorder) get(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "get", reflect.TypeOf((*Mockrepository)(nil).get), arg0, arg1)
 }
+
+// create mocks base method
+func (m *Mockrepository) create(arg0 context.Context, arg1 repositoryCreateRequest) (Thread, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "create", arg0, arg1)
+	ret0, _ := ret[0].(Thread)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// create indicates an expected call of create
+func (mr *MockrepositoryMockRecorder) create(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "create", reflect.TypeOf((*Mockrepository)(nil).create), arg0, arg1)
+}
