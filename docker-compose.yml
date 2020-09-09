@@ -1,6 +1,6 @@
 version: '3'
 services:
-  app:
+  api:
     build: .
     working_dir: /repo
     volumes:
@@ -32,4 +32,4 @@ volumes:
 networks:
   default:
     external:
-      name: ness-api-network
+      name: ness-network

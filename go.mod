@@ -35,9 +35,9 @@ require (
 	github.com/vektah/dataloaden v0.3.0 // indirect
 	github.com/vektah/gqlparser/v2 v2.0.1
 	github.com/xo/dburl v0.0.0-20200727080105-4a02649c2fea // indirect
-	github.com/xo/xo v0.0.0-20200425011923-7818603ff52b // indirect
+	github.com/xo/xo v0.0.0-20200425011923-7818603ff52b
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	golang.org/x/sys v0.0.0-20200905004654-be1d3432aa8f // indirect
-	golang.org/x/tools v0.0.0-20200904185747-39188db58858 // indirect
+	golang.org/x/tools v0.0.0-20200904185747-39188db58858
 	google.golang.org/appengine v1.6.6 // indirect
 )

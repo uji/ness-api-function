@@ -1,7 +1,9 @@
+network:
+	docker network create ness-network
+
 init:
 	docker volume create ness-api-function
 	docker volume create ness-api-data
-	docker network create ness-api-network
 	docker-compose build
 
 clean:
