@@ -12,14 +12,14 @@ clean:
 
 up:
 	docker-compose up -d
-	docker-compose exec app sh entrypoint.sh
+	docker-compose exec api sh entrypoint.sh
 
 down:
 	docker-compose down
 
 start:
 	docker-compose start
-	docker-compose exec app sh entrypoint.sh
+	docker-compose exec api sh entrypoint.sh
 
 stop:
 	docker-compose stop
