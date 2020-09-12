@@ -8,6 +8,7 @@ require (
 	github.com/agnivade/levenshtein v1.1.0 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/aws/aws-lambda-go v1.19.1
+	github.com/aws/aws-sdk-go v1.34.0
 	github.com/awslabs/aws-lambda-go-api-proxy v0.8.0
 	github.com/denisenkom/go-mssqldb v0.0.0-20200831201914-36b6ff1bbc10 // indirect
 	github.com/fatih/color v1.9.0 // indirect
@@ -17,6 +18,7 @@ require (
 	github.com/google/go-cmp v0.4.0
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.8.0
+	github.com/guregu/dynamo v1.9.1
 	github.com/hashicorp/go-multierror v1.1.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/jmoiron/sqlx v1.2.0
