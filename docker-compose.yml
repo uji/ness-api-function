@@ -13,15 +13,17 @@ services:
     ports:
       - 3000:3000
     tty: true
-  dynamodb:
-    image: amazon/dynamodb-local
-    volumes:
-      - "ness-api-data:/home/dynamodblocal"
-  dynamodb-gui:
+  db-with-gui:
     image: instructure/dynamo-local-admin
     ports:
       - 8000:8000
-
+  aws-cli:
+    image: amazon/aws-cli
+    entrypoint: /bin/sh -c "while :; do sleep 10; done"
+    tty: true
+    environment:
+      AWS_ACCESS_KEY_ID: dammy
+      AWS_SECRET_ACCESS_KEY: dammy
 volumes:
   ness-api-function:
     external: true

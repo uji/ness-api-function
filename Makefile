@@ -37,3 +37,15 @@ mock:
 xo:
 	rm xogen/*
 	xo pgsql://$(DB_USER):$(DB_PASS)@$(DB_HOST)/$(DB_NAME)?sslmode=disable -o xogen
+
+table:
+	docker-compose exec aws-cli \
+	aws dynamodb create-table \
+	--region us-east-1 \
+	--endpoint http://db-with-gui:8000 \
+	--table-name Thread \
+	--attribute-definitions \
+		AttributeName=Team,AttributeType=S \
+		AttributeName=Title,AttributeType=S \
+	--key-schema AttributeName=Team,KeyType=HASH AttributeName=Title,KeyType=RANGE \
+	--provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
