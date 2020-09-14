@@ -6,16 +6,16 @@ import (
 	"example.com/ness-api-function/graph/generated"
 	"example.com/ness-api-function/infra/db"
 	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/jmoiron/sqlx"
+	"github.com/guregu/dynamo"
 )
 
-func newThreadUsecase(db *sqlx.DB) *thread.Usecase {
-	rp := thread.NewPsqlRepository(db)
+func newThreadUsecase(db *dynamo.DB) *thread.Usecase {
+	rp := thread.NewDynamoRepository(db)
 	return thread.NewUsecase(rp)
 }
 
 func NewRegisterdServer() *handler.Server {
-	db := db.NewDB()
+	db := db.NewDynamoDB()
 
 	thrd := newThreadUsecase(db)
 
