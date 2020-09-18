@@ -2,6 +2,7 @@ package thread
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/guregu/dynamo"
 )
@@ -12,13 +13,18 @@ type (
 	}
 
 	item struct {
-		Team   string // Hash key
-		Title  string // Range key
-		Closed string `dynamo:"Closed"`
+		ThreadID string // Hash key
+		Key      string // Range key
+		Content  string `dynamo:"Content"`
+		Closed   string `dynamo:"Closed"`
 	}
 )
 
 var _ repository = &dynamoRepository{}
+
+func repositoryError(err error) error {
+	return fmt.Errorf("repository: %w", err)
+}
 
 func NewDynamoRepository(db *dynamo.DB) *dynamoRepository {
 	tbl := db.Table("Thread")
@@ -27,8 +33,8 @@ func NewDynamoRepository(db *dynamo.DB) *dynamoRepository {
 
 func (d *dynamoRepository) get(ctx context.Context, req repositoryGetRequest) ([]*Thread, error) {
 	var items []item
-	if err := d.tbl.Scan().All(&items); err != nil {
-		return nil, err
+	if err := d.tbl.Get("ThreadID", "0").All(&items); err != nil {
+		return nil, repositoryError(err)
 	}
 
 	rslts := make([]*Thread, len(items))
@@ -39,8 +45,8 @@ func (d *dynamoRepository) get(ctx context.Context, req repositoryGetRequest) ([
 		}
 
 		rslts[i] = &Thread{
-			id:     item.Team,
-			title:  item.Title,
+			id:     item.ThreadID,
+			title:  item.Content,
 			closed: clsd,
 		}
 	}
