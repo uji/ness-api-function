@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/guregu/dynamo"
 )
 
@@ -13,10 +14,10 @@ type (
 	}
 
 	item struct {
-		ThreadID string // Hash key
-		Key      string // Range key
-		Content  string `dynamo:"Content"`
-		Closed   string `dynamo:"Closed"`
+		PK      string // Hash key
+		SK      string // Range key
+		Content string `dynamo:"Content"`
+		Closed  string `dynamo:"Closed"`
 	}
 )
 
@@ -33,7 +34,7 @@ func NewDynamoRepository(db *dynamo.DB) *dynamoRepository {
 
 func (d *dynamoRepository) get(ctx context.Context, req repositoryGetRequest) ([]*Thread, error) {
 	var items []item
-	if err := d.tbl.Get("ThreadID", "0").All(&items); err != nil {
+	if err := d.tbl.Get("PK", "Team#0").All(&items); err != nil {
 		return nil, repositoryError(err)
 	}
 
@@ -45,7 +46,7 @@ func (d *dynamoRepository) get(ctx context.Context, req repositoryGetRequest) ([
 		}
 
 		rslts[i] = &Thread{
-			id:     item.ThreadID,
+			id:     item.SK,
 			title:  item.Content,
 			closed: clsd,
 		}
@@ -54,5 +55,18 @@ func (d *dynamoRepository) get(ctx context.Context, req repositoryGetRequest) ([
 }
 
 func (d *dynamoRepository) create(ctx context.Context, req repositoryCreateRequest) (Thread, error) {
-	return Thread{}, nil
+	itm := item{
+		PK:      "Team#0",
+		SK:      "Thread#" + uuid.New().String(),
+		Content: req.title,
+		Closed:  "false",
+	}
+	if err := d.tbl.Put(&itm).Run(); err != nil {
+		return Thread{}, err
+	}
+	return Thread{
+		id:     itm.SK,
+		title:  req.title,
+		closed: false,
+	}, nil
 }

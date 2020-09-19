@@ -45,7 +45,7 @@ table:
 	--endpoint http://db-with-gui:8000 \
 	--table-name Thread \
 	--attribute-definitions \
-		AttributeName=ThreadID,AttributeType=S \
-		AttributeName=Key,AttributeType=S \
-	--key-schema AttributeName=ThreadID,KeyType=HASH AttributeName=Key,KeyType=RANGE \
+		AttributeName=PK,AttributeType=S \
+		AttributeName=SK,AttributeType=S \
+	--key-schema AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE \
 	--provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
