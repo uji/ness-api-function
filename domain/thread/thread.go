@@ -1,7 +1,5 @@
 package thread
 
-import "github.com/google/uuid"
-
 type Thread struct {
 	id     string
 	title  string
@@ -16,13 +14,4 @@ func (t Thread) Title() string {
 }
 func (t Thread) Closed() bool {
 	return t.closed
-}
-
-var NewThread func(title string) (*Thread, error) = func(title string) (*Thread, error) {
-	id := "Thread#" + uuid.New().String()
-	return &Thread{
-		id:     id,
-		title:  title,
-		closed: false,
-	}, nil
 }

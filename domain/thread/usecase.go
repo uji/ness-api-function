@@ -10,7 +10,12 @@ const (
 
 type (
 	Usecase struct {
+		gen  Generator
 		repo Repository
+	}
+
+	Generator interface {
+		Generate(title string) (*Thread, error)
 	}
 
 	Repository interface {
@@ -28,8 +33,8 @@ type (
 	}
 )
 
-func NewUsecase(repo Repository) *Usecase {
-	return &Usecase{repo}
+func NewUsecase(gen Generator, repo Repository) *Usecase {
+	return &Usecase{gen, repo}
 }
 
 type GetRequest struct {
@@ -66,7 +71,7 @@ func (u *Usecase) Create(ctx context.Context, req CreateRequest) (*Thread, error
 	if req.Title == "" {
 		return nil, ErrorCreate01
 	}
-	th, err := NewThread(req.Title)
+	th, err := u.gen.Generate(req.Title)
 	if err != nil {
 		return nil, err
 	}
