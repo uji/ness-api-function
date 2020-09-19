@@ -27,7 +27,7 @@ func TestUsecaseGet(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			repo := NewMockrepository(ctrl)
+			repo := NewMockRepository(ctrl)
 			threads := []*Thread{
 				{
 					id:     "thread1",
@@ -83,19 +83,22 @@ func TestUsecaseCreate(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			repo := NewMockrepository(ctrl)
+			repo := NewMockRepository(ctrl)
 			thrd := Thread{
 				id:     "thread1",
 				title:  "thread1",
 				closed: false,
 			}
+			NewThread = func(title string) (*Thread, error) {
+				return &thrd, nil
+			}
 			if c.useRepository {
 				repo.EXPECT().create(
 					context.Background(),
 					repositoryCreateRequest{
-						title: c.title,
+						thread: &thrd,
 					},
-				).Return(thrd, nil)
+				).Return(&thrd, nil)
 			}
 
 			uc := NewUsecase(repo)
@@ -112,8 +115,8 @@ func TestUsecaseCreate(t *testing.T) {
 			opts := cmp.Options{
 				cmp.AllowUnexported(Thread{}),
 			}
-			if diff := cmp.Diff(thrd, res, opts); diff != "" {
-				t.Fatal(res)
+			if diff := cmp.Diff(&thrd, res, opts); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 	}
