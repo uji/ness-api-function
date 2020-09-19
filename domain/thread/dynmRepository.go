@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/google/uuid"
 	"github.com/guregu/dynamo"
 )
@@ -61,9 +63,19 @@ func (d *dynamoRepository) create(ctx context.Context, req repositoryCreateReque
 		Content: req.title,
 		Closed:  "false",
 	}
-	if err := d.tbl.Put(&itm).Run(); err != nil {
-		return Thread{}, err
+
+	err := d.tbl.Put(&itm).If("attribute_not_exists(SK)").Run()
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case dynamodb.ErrCodeConditionalCheckFailedException:
+				return Thread{}, err
+			default:
+				return Thread{}, err
+			}
+		}
 	}
+
 	return Thread{
 		id:     itm.SK,
 		title:  req.title,
