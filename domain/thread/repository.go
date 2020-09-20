@@ -3,7 +3,6 @@ package thread
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -46,7 +45,6 @@ func (i *item) toThread() *Thread {
 
 type repository struct {
 	tbl *dynamo.Table
-	gen *Generator
 }
 
 var _ Repository = &repository{}
@@ -58,10 +56,9 @@ func repositoryError(err error) error {
 func NewDynamoRepository(
 	db *dynamo.DB,
 	tableName string,
-	gen *Generator,
 ) *repository {
 	tbl := db.Table(tableName)
-	return &repository{&tbl, gen}
+	return &repository{&tbl}
 }
 
 func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]*Thread, error) {
@@ -72,12 +69,7 @@ func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]*Thre
 
 	rslts := make([]*Thread, len(items))
 	for i, item := range items {
-		th, err := d.gen.Generate(item.Content)
-		if err != nil {
-			log.Fatal("generate Thread from Item failed: ", item)
-			continue
-		}
-		rslts[i] = th
+		rslts[i] = item.toThread()
 	}
 	return rslts, nil
 }

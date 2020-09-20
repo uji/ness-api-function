@@ -11,7 +11,7 @@ import (
 
 func newThreadUsecase(db *dynamo.DB) *thread.Usecase {
 	gen := thread.NewGeneratorConfigured()
-	rp := thread.NewDynamoRepository(db, "Thread", gen)
+	rp := thread.NewDynamoRepository(db, "Thread")
 	return thread.NewUsecase(gen, rp)
 }
 
