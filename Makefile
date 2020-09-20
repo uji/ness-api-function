@@ -25,6 +25,9 @@ start:
 stop:
 	docker-compose stop
 
+serve:
+	docker-compose exec api go run ./testsrv
+
 mock:
 	mockgen -source ./domain/thread/usecase.go -destination ./domain/thread/usecase_mock.go -package thread
 
