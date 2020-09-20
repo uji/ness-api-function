@@ -13,17 +13,17 @@ services:
     ports:
       - 3000:3000
     tty: true
-  db:
-    image: postgres:11-alpine
-    command: postgres -c log_destination=stderr -c log_statement=all -c log_connections=on -c log_disconnections=on
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+  db-with-gui:
+    image: instructure/dynamo-local-admin
     ports:
-      - 5000:5432
-    volumes:
-      - "ness-api-data:/var/lib/postgresql/data"
-
+      - 8000:8000
+  aws-cli:
+    image: amazon/aws-cli
+    entrypoint: /bin/sh -c "while :; do sleep 10; done"
+    tty: true
+    environment:
+      AWS_ACCESS_KEY_ID: dammy
+      AWS_SECRET_ACCESS_KEY: dammy
 volumes:
   ness-api-function:
     external: true

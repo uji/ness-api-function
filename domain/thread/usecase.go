@@ -10,12 +10,13 @@ const (
 
 type (
 	Usecase struct {
-		repo repository
+		gen  *Generator
+		repo Repository
 	}
 
-	repository interface {
+	Repository interface {
 		get(context.Context, repositoryGetRequest) ([]*Thread, error)
-		create(context.Context, repositoryCreateRequest) (Thread, error)
+		create(context.Context, repositoryCreateRequest) (*Thread, error)
 	}
 
 	repositoryGetRequest struct {
@@ -24,12 +25,12 @@ type (
 	}
 
 	repositoryCreateRequest struct {
-		title string
+		thread *Thread
 	}
 )
 
-func NewUsecase(repo repository) *Usecase {
-	return &Usecase{repo}
+func NewUsecase(gen *Generator, repo Repository) *Usecase {
+	return &Usecase{gen, repo}
 }
 
 type GetRequest struct {
@@ -62,11 +63,15 @@ type (
 	}
 )
 
-func (u *Usecase) Create(ctx context.Context, req CreateRequest) (Thread, error) {
+func (u *Usecase) Create(ctx context.Context, req CreateRequest) (*Thread, error) {
 	if req.Title == "" {
-		return Thread{}, ErrorCreate01
+		return nil, ErrorCreate01
+	}
+	th, err := u.gen.Generate(req.Title)
+	if err != nil {
+		return nil, err
 	}
 	return u.repo.create(ctx, repositoryCreateRequest{
-		title: req.Title,
+		thread: th,
 	})
 }

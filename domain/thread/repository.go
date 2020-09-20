@@ -2,118 +2,93 @@ package thread
 
 import (
 	"context"
-	"database/sql"
-	"errors"
+	"fmt"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/guregu/dynamo"
 )
 
-type psqlRepository struct {
-	db *sqlx.DB
+type item struct {
+	PK      string // Hash key
+	SK      string // Range key
+	Content string `dynamo:"Content"`
+	Closed  string `dynamo:"Closed"`
 }
 
-func NewPsqlRepository(db *sqlx.DB) *psqlRepository {
-	return &psqlRepository{db}
-}
-
-var _ repository = &psqlRepository{}
-
-func (p *psqlRepository) get(
-	ctx context.Context,
-	req repositoryGetRequest,
-) ([]*Thread, error) {
-	query := `
-select
-    uuid
-  , title
-  , closed
-from threads
-limit :limit
-offset :offset
-  `
-
-	args := struct {
-		Limit  int `db:"limit"`
-		Offset int `db:"offset"`
-	}{
-		Limit:  req.limit,
-		Offset: req.offset,
+func newItem(thread *Thread) *item {
+	clsd := "false"
+	if thread.Closed() {
+		clsd = "true"
 	}
 
-	rslt := struct {
-		UUID   string `db:"uuid"`
-		Title  string `db:"title"`
-		Closed bool   `db:"closed"`
-	}{}
+	return &item{
+		PK:      "Team#0",
+		SK:      thread.ID(),
+		Content: thread.Title(),
+		Closed:  clsd,
+	}
+}
 
-	rows, err := p.db.NamedQueryContext(ctx, query, &args)
+func (i *item) toThread() *Thread {
+	clsd := false
+	if i.Closed == "true" {
+		clsd = true
+	}
+
+	return &Thread{
+		id:     i.SK,
+		title:  i.Content,
+		closed: clsd,
+	}
+}
+
+type repository struct {
+	tbl *dynamo.Table
+}
+
+var _ Repository = &repository{}
+
+func repositoryError(err error) error {
+	return fmt.Errorf("repository: %w", err)
+}
+
+func NewDynamoRepository(
+	db *dynamo.DB,
+	tableName string,
+) *repository {
+	tbl := db.Table(tableName)
+	return &repository{&tbl}
+}
+
+func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]*Thread, error) {
+	var items []item
+	if err := d.tbl.Get("PK", "Team#0").All(&items); err != nil {
+		return nil, repositoryError(err)
+	}
+
+	rslts := make([]*Thread, len(items))
+	for i, item := range items {
+		rslts[i] = item.toThread()
+	}
+	return rslts, nil
+}
+
+func (d *repository) create(ctx context.Context, req repositoryCreateRequest) (*Thread, error) {
+	condition := "attribute_not_exists(PK) AND attribute_not_exists(SK) "
+	itm := newItem(req.thread)
+
+	err := d.tbl.Put(&itm).If(condition).Run()
 	if err != nil {
-		return nil, err
-	}
-
-	res := make([]*Thread, 0, 5)
-	for rows.Next() {
-		if err := rows.StructScan(&rslt); err != nil {
-			return nil, err
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case dynamodb.ErrCodeConditionalCheckFailedException:
+				return nil, err
+			default:
+				return nil, err
+			}
 		}
-		res = append(res, &Thread{
-			id:     rslt.UUID,
-			title:  rslt.Title,
-			closed: rslt.Closed,
-		})
 	}
 
-	return res, nil
-}
-
-func (p *psqlRepository) create(ctx context.Context, req repositoryCreateRequest) (Thread, error) {
-	query := `
-insert into threads (
-	title
-)
-values (
-	:title
-)
-returning
-		uuid
-	, title
-	, closed
-	`
-
-	args := struct {
-		Title string
-	}{
-		Title: req.title,
-	}
-
-	rslt := struct {
-		UUID   string `db:"uuid"`
-		Title  string `db:"title"`
-		Closed bool   `db:"closed"`
-	}{}
-
-	tx, err := p.db.BeginTx(ctx, &sql.TxOptions{})
-	if err != nil {
-		return Thread{}, err
-	}
-	defer tx.Rollback()
-
-	rows, err := p.db.NamedQueryContext(ctx, query, &args)
-	if err != nil {
-		return Thread{}, err
-	}
-	if !rows.Next() {
-		return Thread{}, errors.New("failed")
-	}
-	if err := rows.StructScan(&rslt); err != nil {
-		return Thread{}, err
-	}
-
-	tx.Commit()
-
-	return Thread{
-		id:     rslt.UUID,
-		title:  rslt.Title,
-		closed: rslt.Closed,
-	}, nil
+	return req.thread, nil
 }

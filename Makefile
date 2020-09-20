@@ -9,6 +9,7 @@ init:
 clean:
 	make down
 	docker volume rm ness-api-function
+	docker volume rm ness-api-data
 
 up:
 	docker-compose up -d
@@ -24,15 +25,20 @@ start:
 stop:
 	docker-compose stop
 
-build:
-	GOOS=linux GOARCH=amd64 go build -o bin/main
-
-migrate:
-	sql-migrate up
+serve:
+	docker-compose exec api go run ./testsrv
 
 mock:
 	mockgen -source ./domain/thread/usecase.go -destination ./domain/thread/usecase_mock.go -package thread
 
-xo:
-	rm xogen/*
-	xo pgsql://$(DB_USER):$(DB_PASS)@$(DB_HOST)/$(DB_NAME)?sslmode=disable -o xogen
+table:
+	docker-compose exec aws-cli \
+	aws dynamodb create-table \
+	--region us-east-1 \
+	--endpoint http://db-with-gui:8000 \
+	--table-name Thread \
+	--attribute-definitions \
+		AttributeName=PK,AttributeType=S \
+		AttributeName=SK,AttributeType=S \
+	--key-schema AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE \
+	--provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1

@@ -7,8 +7,10 @@ ENV PORT 3000
 ENV GITHUB_USER_NAME ""
 ENV GITHUB_TOKEN ""
 ENV GITHUB_EMAIL ""
-ENV DB_HOST db
-ENV DB_PORT 5432
-ENV DB_NAME postgres
-ENV DB_USER postgres
-ENV DB_PASS password
+ENV AWS_ACCESS_KEY_ID dammy
+ENV AWS_SECRET_ACCESS_KEY dammy
+ENV AWS_REGION us-east-1
+ENV DB_ENDPOINT http://db-with-gui:8000
+
+RUN go get github.com/golang/mock/mockgen@v1.4.4
+RUN go get github.com/99designs/gqlgen
