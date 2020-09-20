@@ -10,12 +10,8 @@ const (
 
 type (
 	Usecase struct {
-		gen  Generator
+		gen  *Generator
 		repo Repository
-	}
-
-	Generator interface {
-		Generate(title string) (*Thread, error)
 	}
 
 	Repository interface {
@@ -33,7 +29,7 @@ type (
 	}
 )
 
-func NewUsecase(gen Generator, repo Repository) *Usecase {
+func NewUsecase(gen *Generator, repo Repository) *Usecase {
 	return &Usecase{gen, repo}
 }
 

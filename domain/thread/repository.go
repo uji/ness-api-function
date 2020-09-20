@@ -3,6 +3,7 @@ package thread
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -18,14 +19,14 @@ type item struct {
 
 func newItem(thread *Thread) *item {
 	clsd := "false"
-	if thread.closed {
+	if thread.Closed() {
 		clsd = "true"
 	}
 
 	return &item{
 		PK:      "Team#0",
-		SK:      thread.id,
-		Content: thread.title,
+		SK:      thread.ID(),
+		Content: thread.Title(),
 		Closed:  clsd,
 	}
 }
@@ -45,6 +46,7 @@ func (i *item) toThread() *Thread {
 
 type repository struct {
 	tbl *dynamo.Table
+	gen *Generator
 }
 
 var _ Repository = &repository{}
@@ -53,9 +55,13 @@ func repositoryError(err error) error {
 	return fmt.Errorf("repository: %w", err)
 }
 
-func NewDynamoRepository(db *dynamo.DB) *repository {
-	tbl := db.Table("Thread")
-	return &repository{&tbl}
+func NewDynamoRepository(
+	db *dynamo.DB,
+	tableName string,
+	gen *Generator,
+) *repository {
+	tbl := db.Table(tableName)
+	return &repository{&tbl, gen}
 }
 
 func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]*Thread, error) {
@@ -66,7 +72,12 @@ func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]*Thre
 
 	rslts := make([]*Thread, len(items))
 	for i, item := range items {
-		rslts[i] = item.toThread()
+		th, err := d.gen.Generate(item.Content)
+		if err != nil {
+			log.Fatal("generate Thread from Item failed: ", item)
+			continue
+		}
+		rslts[i] = th
 	}
 	return rslts, nil
 }

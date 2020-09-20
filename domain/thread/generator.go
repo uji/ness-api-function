@@ -3,13 +3,13 @@ package thread
 import "github.com/google/uuid"
 
 type (
-	generator struct {
+	Generator struct {
 		generate func(title string) (*Thread, error)
 	}
 )
 
-func NewGeneratorConfigured() *generator {
-	return &generator{
+func NewGeneratorConfigured() *Generator {
+	return &Generator{
 		func(title string) (*Thread, error) {
 			id := "Thread#" + uuid.New().String()
 			return &Thread{
@@ -23,10 +23,10 @@ func NewGeneratorConfigured() *generator {
 
 func NewGenerator(
 	genFunc func(title string) (*Thread, error),
-) *generator {
-	return &generator{genFunc}
+) *Generator {
+	return &Generator{genFunc}
 }
 
-func (f *generator) Generate(title string) (*Thread, error) {
+func (f *Generator) Generate(title string) (*Thread, error) {
 	return f.generate(title)
 }

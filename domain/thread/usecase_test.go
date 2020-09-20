@@ -27,7 +27,7 @@ func TestUsecaseGet(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			gen := NewMockGenerator(ctrl)
+			gen := NewGeneratorConfigured()
 			repo := NewMockRepository(ctrl)
 			threads := []*Thread{
 				{
@@ -87,14 +87,13 @@ func TestUsecaseCreate(t *testing.T) {
 
 			thrd := Thread{
 				id:     "thread1",
-				title:  "thread1",
+				title:  c.title,
 				closed: false,
 			}
 
-			gen := NewMockGenerator(ctrl)
-			if c.useGenerator {
-				gen.EXPECT().Generate(c.title).Return(&thrd, nil)
-			}
+			gen := NewGenerator(func(title string) (*Thread, error) {
+				return &thrd, nil
+			})
 
 			repo := NewMockRepository(ctrl)
 			if c.useRepository {
