@@ -2,12 +2,22 @@
 
 package model
 
+type CloseThread struct {
+	ThreadID string `json:"threadID"`
+}
+
+type GetThreads struct {
+	Limit  *int  `json:"limit"`
+	Offset *int  `json:"offset"`
+	Closed *bool `json:"closed"`
+}
+
 type NewThread struct {
 	Title string `json:"title"`
 }
 
 type Thread struct {
-	ID     string `json:"id"`
-	Title  string `json:"title"`
-	Closed bool   `json:"closed"`
+	ThreadID string `json:"threadID"`
+	Title    string `json:"title"`
+	Closed   bool   `json:"closed"`
 }

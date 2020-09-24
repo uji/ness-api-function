@@ -3,19 +3,30 @@
 # https://gqlgen.com/getting-started/
 
 type Thread {
-  id: String!
+  threadID: ID!
   title: String!
   closed: Boolean!
 }
 
+input GetThreads {
+  limit: Int
+  offset: Int
+  closed: Boolean
+}
+
 type Query {
-  threads: [Thread!]!
+  threads(input: GetThreads!): [Thread!]!
 }
 
 input NewThread {
   title: String!
 }
 
+input CloseThread {
+  threadID: ID!
+}
+
 type Mutation {
   createThread(input: NewThread!): Thread!
+  closeThread(input: CloseThread!): Boolean
 }
