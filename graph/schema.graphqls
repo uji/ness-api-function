@@ -2,20 +2,28 @@
 #
 # https://gqlgen.com/getting-started/
 
-type Thread {
-  threadID: ID!
-  title: String!
-  closed: Boolean!
+scalar DateTime
+
+interface Node {
+  id: ID!
 }
 
-input GetThreads {
+type Thread implements Node {
+  id: ID!
+  title: String!
+  closed: Boolean!
+  createdAt: DateTime!
+}
+
+input GetThreadsInput {
   limit: Int
-  offset: Int
+  lastEvaluatedID: ID
   closed: Boolean
 }
 
 type Query {
-  threads(input: GetThreads!): [Thread!]!
+  node(id: ID!): Node!
+  threads(input: GetThreadsInput!): [Thread!]!
 }
 
 input NewThread {

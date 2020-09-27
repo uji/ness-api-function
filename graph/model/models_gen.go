@@ -2,14 +2,18 @@
 
 package model
 
+type Node interface {
+	IsNode()
+}
+
 type CloseThread struct {
 	ThreadID string `json:"threadID"`
 }
 
-type GetThreads struct {
-	Limit  *int  `json:"limit"`
-	Offset *int  `json:"offset"`
-	Closed *bool `json:"closed"`
+type GetThreadsInput struct {
+	Limit           *int    `json:"limit"`
+	LastEvaluatedID *string `json:"lastEvaluatedID"`
+	Closed          *bool   `json:"closed"`
 }
 
 type NewThread struct {
@@ -17,7 +21,10 @@ type NewThread struct {
 }
 
 type Thread struct {
-	ThreadID string `json:"threadID"`
-	Title    string `json:"title"`
-	Closed   bool   `json:"closed"`
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	Closed    bool   `json:"closed"`
+	CreatedAt string `json:"createdAt"`
 }
+
+func (Thread) IsNode() {}

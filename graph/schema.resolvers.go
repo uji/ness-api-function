@@ -20,9 +20,9 @@ func (r *mutationResolver) CreateThread(ctx context.Context, input model.NewThre
 		return nil, err
 	}
 	return &model.Thread{
-		ThreadID: res.ID(),
-		Title:    res.Title(),
-		Closed:   res.Closed(),
+		ID:     res.ID(),
+		Title:  res.Title(),
+		Closed: res.Closed(),
 	}, nil
 }
 
@@ -30,10 +30,14 @@ func (r *mutationResolver) CloseThread(ctx context.Context, input model.CloseThr
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) Threads(ctx context.Context, input model.GetThreads) ([]*model.Thread, error) {
+func (r *queryResolver) Node(ctx context.Context, id string) (model.Node, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) Threads(ctx context.Context, input model.GetThreadsInput) ([]*model.Thread, error) {
 	thrds, err := r.thread.Get(ctx, thread.GetRequest{
-		Limit:  100,
-		Offset: 0,
+		Limit:           input.Limit,
+		LastEvaluatedID: input.LastEvaluatedID,
 	})
 	if err != nil {
 		return nil, err
@@ -41,9 +45,9 @@ func (r *queryResolver) Threads(ctx context.Context, input model.GetThreads) ([]
 	res := make([]*model.Thread, len(thrds))
 	for i, thrd := range thrds {
 		res[i] = &model.Thread{
-			ThreadID: thrd.ID(),
-			Title:    thrd.Title(),
-			Closed:   thrd.Closed(),
+			ID:     thrd.ID(),
+			Title:  thrd.Title(),
+			Closed: thrd.Closed(),
 		}
 	}
 	return res, nil
@@ -57,3 +61,13 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *queryResolver) Nodes(ctx context.Context, ids []string) ([]model.Node, error) {
+	panic(fmt.Errorf("not implemented"))
+}
