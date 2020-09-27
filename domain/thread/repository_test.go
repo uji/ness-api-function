@@ -10,57 +10,125 @@ import (
 )
 
 func TestRepoGet(t *testing.T) {
-	db := db.NewDynamoDB()
-	tbl := dbtool.CreateThreadTestTable(db, t)
-	defer tbl.DeleteTable().Run()
-
-	sut := NewDynamoRepository(db, tbl.Name())
-
-	data := []item{
+	cases := []struct {
+		name   string
+		items  []item
+		limit  int
+		offset int
+		expt   []*Thread
+	}{
 		{
-			PK:      "Team#0",
-			SK:      "Thread#0",
-			Content: "Thread0",
-			Closed:  "false",
+			name: "normal",
+			items: []item{
+				{
+					PK:      "Team#0",
+					SK:      "Thread#0",
+					Content: "Thread0",
+					Closed:  "false",
+				},
+				{
+					PK:      "Team#0",
+					SK:      "Thread#1",
+					Content: "Thread1",
+					Closed:  "true",
+				},
+			},
+			limit:  5,
+			offset: 0,
+			expt: []*Thread{
+				{
+					id:     "Thread#0",
+					title:  "Thread0",
+					closed: false,
+				},
+				{
+					id:     "Thread#1",
+					title:  "Thread1",
+					closed: true,
+				},
+			},
 		},
 		{
-			PK:      "Team#0",
-			SK:      "Thread#1",
-			Content: "Thread1",
-			Closed:  "true",
+			name: "limited",
+			items: []item{
+				{
+					PK:      "Team#0",
+					SK:      "Thread#0",
+					Content: "Thread0",
+					Closed:  "false",
+				},
+				{
+					PK:      "Team#0",
+					SK:      "Thread#1",
+					Content: "Thread1",
+					Closed:  "true",
+				},
+			},
+			limit:  1,
+			offset: 0,
+			expt: []*Thread{
+				{
+					id:     "Thread#0",
+					title:  "Thread0",
+					closed: false,
+				},
+			},
 		},
+		// {
+		// 	name: "limited and set offset",
+		// 	items: []item{
+		// 		{
+		// 			PK:      "Team#0",
+		// 			SK:      "Thread#0",
+		// 			Content: "Thread0",
+		// 			Closed:  "false",
+		// 		},
+		// 		{
+		// 			PK:      "Team#0",
+		// 			SK:      "Thread#1",
+		// 			Content: "Thread1",
+		// 			Closed:  "true",
+		// 		},
+		// 	},
+		// 	limit:  1,
+		// 	offset: 1,
+		// 	expt: []*Thread{
+		// 		{
+		// 			id:     "Thread#1",
+		// 			title:  "Thread1",
+		// 			closed: true,
+		// 		},
+		// 	},
+		// },
 	}
 
-	expt := []*Thread{
-		{
-			id:     "Thread#0",
-			title:  "Thread0",
-			closed: false,
-		},
-		{
-			id:     "Thread#1",
-			title:  "Thread1",
-			closed: true,
-		},
-	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			db := db.NewDynamoDB()
+			tbl := dbtool.CreateThreadTestTable(db, t)
+			defer tbl.DeleteTable().Run()
 
-	for _, d := range data {
-		if err := tbl.Put(d).Run(); err != nil {
-			t.Fatal(err)
-		}
-	}
+			sut := NewDynamoRepository(db, tbl.Name())
 
-	res, err := sut.get(context.Background(), repositoryGetRequest{
-		limit:  0,
-		offset: 0,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+			for _, d := range c.items {
+				if err := tbl.Put(d).Run(); err != nil {
+					t.Fatal(err)
+				}
+			}
 
-	opt := cmp.AllowUnexported(Thread{})
-	if diff := cmp.Diff(expt, res, opt); diff != "" {
-		t.Fatal(diff)
+			res, err := sut.get(context.Background(), repositoryGetRequest{
+				limit:  c.limit,
+				offset: c.offset,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			opt := cmp.AllowUnexported(Thread{})
+			if diff := cmp.Diff(c.expt, res, opt); diff != "" {
+				t.Fatal(diff)
+			}
+		})
 	}
 }
 

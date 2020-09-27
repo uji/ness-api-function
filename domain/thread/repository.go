@@ -63,7 +63,8 @@ func NewDynamoRepository(
 
 func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]*Thread, error) {
 	var items []item
-	if err := d.tbl.Get("PK", "Team#0").All(&items); err != nil {
+	err := d.tbl.Get("PK", "Team#0").Limit(int64(req.limit)).All(&items)
+	if err != nil {
 		return nil, repositoryError(err)
 	}
 

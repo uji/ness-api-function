@@ -1,6 +1,7 @@
 package dbtool
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/guregu/dynamo"
@@ -20,9 +21,10 @@ func CreateThreadTable(db *dynamo.DB, name string) (dynamo.Table, error) {
 }
 
 func CreateThreadTestTable(db *dynamo.DB, t *testing.T) dynamo.Table {
-	tbl, err := CreateThreadTable(db, "Thread-"+t.Name())
+	tName := strings.ReplaceAll(t.Name(), "/", "-")
+	tbl, err := CreateThreadTable(db, "Thread-"+tName)
 	if err != nil {
-		t.Fatal("create Thread table")
+		t.Fatal("create Thread table", err)
 	}
 	return tbl
 }
