@@ -35,7 +35,7 @@ func NewUsecase(gen *Generator, repo Repository) *Usecase {
 }
 
 type GetRequest struct {
-	Limit           *int64
+	Limit           *int
 	LastEvaluatedID *string
 }
 
@@ -48,7 +48,7 @@ func (u *Usecase) Get(ctx context.Context, req GetRequest) ([]*Thread, error) {
 	} else if *req.Limit > maxLimit {
 		l = maxLimit
 	} else {
-		l = *req.Limit
+		l = int64(*req.Limit)
 	}
 
 	return u.repo.get(ctx, repositoryGetRequest{

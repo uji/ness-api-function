@@ -51,9 +51,12 @@ func TestUsecaseGet(t *testing.T) {
 			).Return(threads, nil)
 
 			uc := NewUsecase(gen, repo)
-			var l *int64 = nil
+
+			l := new(int)
 			if c.reqLimit.Valid {
-				l = &c.reqLimit.Int64
+				*l = int(c.reqLimit.Int64)
+			} else {
+				l = nil
 			}
 			res, err := uc.Get(context.Background(), GetRequest{
 				Limit:           l,
