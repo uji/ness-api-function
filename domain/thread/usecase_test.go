@@ -92,7 +92,7 @@ func TestUsecaseCreate(t *testing.T) {
 		useRepository bool
 	}{
 		{"normal", "thread1", nil, true, true},
-		{"blank title", "", ErrorCreate01, false, false},
+		{"blank title", "", ErrorTitleIsRequired, false, false},
 	}
 
 	for _, c := range cases {

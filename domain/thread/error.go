@@ -3,5 +3,6 @@ package thread
 import "errors"
 
 var (
-	ErrorCreate01 error = errors.New("title is blank")
+	ErrorLastEvaluatedIDCanNotBeBlank error = errors.New("lastEvaluatedID can not be blank")
+	ErrorTitleIsRequired              error = errors.New("title is required")
 )

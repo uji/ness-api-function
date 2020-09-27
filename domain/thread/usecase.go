@@ -65,7 +65,7 @@ type (
 
 func (u *Usecase) Create(ctx context.Context, req CreateRequest) (*Thread, error) {
 	if req.Title == "" {
-		return nil, ErrorCreate01
+		return nil, ErrorTitleIsRequired
 	}
 	th, err := u.gen.Generate(req.Title)
 	if err != nil {

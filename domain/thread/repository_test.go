@@ -16,6 +16,7 @@ func TestRepoGet(t *testing.T) {
 		limit           int64
 		lastEvaluatedID sql.NullString
 		expt            []*Thread
+		err             error
 	}{
 		{
 			name: "normal",
@@ -100,6 +101,14 @@ func TestRepoGet(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:            "lastEvaluatedID present and blank",
+			items:           []item{},
+			limit:           1,
+			lastEvaluatedID: sql.NullString{String: "", Valid: true},
+			expt:            nil,
+			err:             ErrorLastEvaluatedIDCanNotBeBlank,
+		},
 	}
 
 	for _, c := range cases {
@@ -124,7 +133,7 @@ func TestRepoGet(t *testing.T) {
 				limit:           c.limit,
 				lastEvaluatedID: lstevltdid,
 			})
-			if err != nil {
+			if err != c.err {
 				t.Fatal(err)
 			}
 
