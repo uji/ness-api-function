@@ -2,6 +2,7 @@ package thread
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -10,17 +11,17 @@ import (
 
 func TestUsecaseGet(t *testing.T) {
 	cases := []struct {
-		name      string
-		reqLimit  int
-		reqOffset int
-		limit     int
-		offset    int
+		name     string
+		reqLimit sql.NullInt64
+		limit    int64
 	}{
-		{"normal", 5, 5, 5, 5},
-		{"limit too small", -1, 5, 1, 5},
-		{"limit too big", 101, 5, 100, 5},
-		{"offset too small", 5, -1, 5, 0},
+		{"normal", nInt64(5), 5},
+		{"limit too small", nInt64(-1), 1},
+		{"limit too big", nInt64(101), 100},
+		{"limit is null", sql.NullInt64{}, 30},
 	}
+
+	lastEvaluatedID := "lastEvaluatedID"
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -44,15 +45,19 @@ func TestUsecaseGet(t *testing.T) {
 			repo.EXPECT().get(
 				context.Background(),
 				repositoryGetRequest{
-					limit:  c.limit,
-					offset: c.offset,
+					limit:           c.limit,
+					lastEvaluatedID: &lastEvaluatedID,
 				},
 			).Return(threads, nil)
 
 			uc := NewUsecase(gen, repo)
+			var l *int64 = nil
+			if c.reqLimit.Valid {
+				l = &c.reqLimit.Int64
+			}
 			res, err := uc.Get(context.Background(), GetRequest{
-				Limit:  c.reqLimit,
-				Offset: c.reqOffset,
+				Limit:           l,
+				LastEvaluatedID: &lastEvaluatedID,
 			})
 			if err != nil {
 				t.Fatal(err)
@@ -65,6 +70,13 @@ func TestUsecaseGet(t *testing.T) {
 				t.Fatal(res)
 			}
 		})
+	}
+}
+
+func nInt64(n int64) sql.NullInt64 {
+	return sql.NullInt64{
+		Int64: n,
+		Valid: true,
 	}
 }
 

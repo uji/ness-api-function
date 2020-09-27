@@ -2,6 +2,7 @@ package thread
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 
 	"example.com/ness-api-function/infra/db"
@@ -10,11 +11,11 @@ import (
 
 func TestRepoGet(t *testing.T) {
 	cases := []struct {
-		name   string
-		items  []item
-		limit  int
-		offset int
-		expt   []*Thread
+		name            string
+		items           []item
+		limit           int64
+		lastEvaluatedID sql.NullString
+		expt            []*Thread
 	}{
 		{
 			name: "normal",
@@ -32,8 +33,8 @@ func TestRepoGet(t *testing.T) {
 					Closed:  "true",
 				},
 			},
-			limit:  5,
-			offset: 0,
+			limit:           5,
+			lastEvaluatedID: sql.NullString{},
 			expt: []*Thread{
 				{
 					id:     "Thread#0",
@@ -63,8 +64,8 @@ func TestRepoGet(t *testing.T) {
 					Closed:  "true",
 				},
 			},
-			limit:  1,
-			offset: 0,
+			limit:           1,
+			lastEvaluatedID: sql.NullString{},
 			expt: []*Thread{
 				{
 					id:     "Thread#0",
@@ -73,32 +74,32 @@ func TestRepoGet(t *testing.T) {
 				},
 			},
 		},
-		// {
-		// 	name: "limited and set offset",
-		// 	items: []item{
-		// 		{
-		// 			PK:      "Team#0",
-		// 			SK:      "Thread#0",
-		// 			Content: "Thread0",
-		// 			Closed:  "false",
-		// 		},
-		// 		{
-		// 			PK:      "Team#0",
-		// 			SK:      "Thread#1",
-		// 			Content: "Thread1",
-		// 			Closed:  "true",
-		// 		},
-		// 	},
-		// 	limit:  1,
-		// 	offset: 1,
-		// 	expt: []*Thread{
-		// 		{
-		// 			id:     "Thread#1",
-		// 			title:  "Thread1",
-		// 			closed: true,
-		// 		},
-		// 	},
-		// },
+		{
+			name: "limited and set lastEvaluatedID",
+			items: []item{
+				{
+					PK:      "Team#0",
+					SK:      "Thread#0",
+					Content: "Thread0",
+					Closed:  "false",
+				},
+				{
+					PK:      "Team#0",
+					SK:      "Thread#1",
+					Content: "Thread1",
+					Closed:  "true",
+				},
+			},
+			limit:           1,
+			lastEvaluatedID: sql.NullString{String: "Thread#0", Valid: true},
+			expt: []*Thread{
+				{
+					id:     "Thread#1",
+					title:  "Thread1",
+					closed: true,
+				},
+			},
+		},
 	}
 
 	for _, c := range cases {
@@ -115,9 +116,13 @@ func TestRepoGet(t *testing.T) {
 				}
 			}
 
+			var lstevltdid *string = nil
+			if c.lastEvaluatedID.Valid {
+				lstevltdid = &c.lastEvaluatedID.String
+			}
 			res, err := sut.get(context.Background(), repositoryGetRequest{
-				limit:  c.limit,
-				offset: c.offset,
+				limit:           c.limit,
+				lastEvaluatedID: lstevltdid,
 			})
 			if err != nil {
 				t.Fatal(err)

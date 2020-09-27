@@ -9,6 +9,72 @@ import (
 	"github.com/guregu/dynamo"
 )
 
+type repository struct {
+	tbl *dynamo.Table
+}
+
+var _ Repository = &repository{}
+
+func repositoryError(err error) error {
+	return fmt.Errorf("repository: %w", err)
+}
+
+func NewDynamoRepository(
+	db *dynamo.DB,
+	tableName string,
+) *repository {
+	tbl := db.Table(tableName)
+	return &repository{&tbl}
+}
+
+func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]*Thread, error) {
+	var items []item
+	teamID := "Team#0"
+
+	qr := d.tbl.Get("PK", teamID).Limit(req.limit)
+	if req.lastEvaluatedID != nil {
+		pkey := dynamo.PagingKey{
+			"PK": &dynamodb.AttributeValue{
+				S: &teamID,
+			},
+			"SK": &dynamodb.AttributeValue{
+				S: req.lastEvaluatedID,
+			},
+		}
+		qr = qr.StartFrom(pkey)
+	}
+
+	err := qr.All(&items)
+	if err != nil {
+		return nil, repositoryError(err)
+	}
+
+	rslts := make([]*Thread, len(items))
+	for i, item := range items {
+		rslts[i] = item.toThread()
+	}
+	return rslts, nil
+}
+
+func (d *repository) create(ctx context.Context, req repositoryCreateRequest) (*Thread, error) {
+	condition := "attribute_not_exists(PK) AND attribute_not_exists(SK) "
+	itm := newItem(req.thread)
+
+	err := d.tbl.Put(&itm).If(condition).Run()
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case dynamodb.ErrCodeConditionalCheckFailedException:
+				return nil, err
+			default:
+				return nil, err
+			}
+		}
+	}
+
+	return req.thread, nil
+}
+
 type item struct {
 	PK      string // Hash key
 	SK      string // Range key
@@ -41,55 +107,4 @@ func (i *item) toThread() *Thread {
 		title:  i.Content,
 		closed: clsd,
 	}
-}
-
-type repository struct {
-	tbl *dynamo.Table
-}
-
-var _ Repository = &repository{}
-
-func repositoryError(err error) error {
-	return fmt.Errorf("repository: %w", err)
-}
-
-func NewDynamoRepository(
-	db *dynamo.DB,
-	tableName string,
-) *repository {
-	tbl := db.Table(tableName)
-	return &repository{&tbl}
-}
-
-func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]*Thread, error) {
-	var items []item
-	err := d.tbl.Get("PK", "Team#0").Limit(int64(req.limit)).All(&items)
-	if err != nil {
-		return nil, repositoryError(err)
-	}
-
-	rslts := make([]*Thread, len(items))
-	for i, item := range items {
-		rslts[i] = item.toThread()
-	}
-	return rslts, nil
-}
-
-func (d *repository) create(ctx context.Context, req repositoryCreateRequest) (*Thread, error) {
-	condition := "attribute_not_exists(PK) AND attribute_not_exists(SK) "
-	itm := newItem(req.thread)
-
-	err := d.tbl.Put(&itm).If(condition).Run()
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			case dynamodb.ErrCodeConditionalCheckFailedException:
-				return nil, err
-			default:
-				return nil, err
-			}
-		}
-	}
-
-	return req.thread, nil
 }

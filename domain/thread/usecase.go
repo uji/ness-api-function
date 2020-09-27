@@ -5,7 +5,8 @@ import (
 )
 
 const (
-	maxlimit = 100
+	defaultLimit = 30
+	maxLimit     = 100
 )
 
 type (
@@ -20,8 +21,8 @@ type (
 	}
 
 	repositoryGetRequest struct {
-		limit  int
-		offset int
+		limit           int64
+		lastEvaluatedID *string
 	}
 
 	repositoryCreateRequest struct {
@@ -34,26 +35,25 @@ func NewUsecase(gen *Generator, repo Repository) *Usecase {
 }
 
 type GetRequest struct {
-	Limit  int
-	Offset int
+	Limit           *int64
+	LastEvaluatedID *string
 }
 
 func (u *Usecase) Get(ctx context.Context, req GetRequest) ([]*Thread, error) {
-	l := req.Limit
-	if req.Limit < 1 {
+	var l int64
+	if req.Limit == nil {
+		l = defaultLimit
+	} else if *req.Limit < 1 {
 		l = 1
-	} else if req.Limit > maxlimit {
-		l = maxlimit
-	}
-
-	o := req.Offset
-	if req.Offset < 0 {
-		o = 0
+	} else if *req.Limit > maxLimit {
+		l = maxLimit
+	} else {
+		l = *req.Limit
 	}
 
 	return u.repo.get(ctx, repositoryGetRequest{
-		limit:  l,
-		offset: o,
+		limit:           l,
+		lastEvaluatedID: req.LastEvaluatedID,
 	})
 }
 

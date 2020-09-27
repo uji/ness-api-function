@@ -10,44 +10,6 @@ import (
 	reflect "reflect"
 )
 
-// MockGenerator is a mock of Generator interface
-type MockGenerator struct {
-	ctrl     *gomock.Controller
-	recorder *MockGeneratorMockRecorder
-}
-
-// MockGeneratorMockRecorder is the mock recorder for MockGenerator
-type MockGeneratorMockRecorder struct {
-	mock *MockGenerator
-}
-
-// NewMockGenerator creates a new mock instance
-func NewMockGenerator(ctrl *gomock.Controller) *MockGenerator {
-	mock := &MockGenerator{ctrl: ctrl}
-	mock.recorder = &MockGeneratorMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockGenerator) EXPECT() *MockGeneratorMockRecorder {
-	return m.recorder
-}
-
-// Generate mocks base method
-func (m *MockGenerator) Generate(title string) (*Thread, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Generate", title)
-	ret0, _ := ret[0].(*Thread)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Generate indicates an expected call of Generate
-func (mr *MockGeneratorMockRecorder) Generate(title interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Generate", reflect.TypeOf((*MockGenerator)(nil).Generate), title)
-}
-
 // MockRepository is a mock of Repository interface
 type MockRepository struct {
 	ctrl     *gomock.Controller
