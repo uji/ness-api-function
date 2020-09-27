@@ -32,13 +32,7 @@ mock:
 	mockgen -source ./domain/thread/usecase.go -destination ./domain/thread/usecase_mock.go -package thread
 
 table:
-	docker-compose exec aws-cli \
-	aws dynamodb create-table \
-	--region us-east-1 \
-	--endpoint http://db-with-gui:8000 \
-	--table-name Thread \
-	--attribute-definitions \
-		AttributeName=PK,AttributeType=S \
-		AttributeName=SK,AttributeType=S \
-	--key-schema AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE \
-	--provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
+	go run ./tools/dbtool/ create
+
+destroy-table:
+	go run ./tools/dbtool/ destroy

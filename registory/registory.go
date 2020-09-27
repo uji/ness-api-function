@@ -9,9 +9,9 @@ import (
 	"github.com/guregu/dynamo"
 )
 
-func newThreadUsecase(db *dynamo.DB) *thread.Usecase {
+func newThreadUsecase(dnmdb *dynamo.DB) *thread.Usecase {
 	gen := thread.NewGeneratorConfigured()
-	rp := thread.NewDynamoRepository(db, "Thread")
+	rp := thread.NewDynamoRepository(dnmdb, db.ThreadTableName)
 	return thread.NewUsecase(gen, rp)
 }
 

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"example.com/ness-api-function/infra/db"
-	"example.com/ness-api-function/tools/dbtool"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -104,11 +103,11 @@ func TestRepoGet(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			db := db.NewDynamoDB()
-			tbl := dbtool.CreateThreadTestTable(db, t)
+			dnmdb := db.NewDynamoDB()
+			tbl := db.CreateThreadTestTable(dnmdb, t)
 			defer tbl.DeleteTable().Run()
 
-			sut := NewDynamoRepository(db, tbl.Name())
+			sut := NewDynamoRepository(dnmdb, tbl.Name())
 
 			for _, d := range c.items {
 				if err := tbl.Put(d).Run(); err != nil {
@@ -133,11 +132,11 @@ func TestRepoGet(t *testing.T) {
 }
 
 func TestRepoCreate(t *testing.T) {
-	db := db.NewDynamoDB()
-	tbl := dbtool.CreateThreadTestTable(db, t)
+	dnmdb := db.NewDynamoDB()
+	tbl := db.CreateThreadTestTable(dnmdb, t)
 	defer tbl.DeleteTable().Run()
 
-	sut := NewDynamoRepository(db, tbl.Name())
+	sut := NewDynamoRepository(dnmdb, tbl.Name())
 
 	thrd := Thread{
 		id:     "thread1",
