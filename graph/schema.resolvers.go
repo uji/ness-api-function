@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"example.com/ness-api-function/domain/thread"
 	"example.com/ness-api-function/graph/generated"
@@ -45,9 +46,10 @@ func (r *queryResolver) Threads(ctx context.Context, input model.GetThreadsInput
 	res := make([]*model.Thread, len(thrds))
 	for i, thrd := range thrds {
 		res[i] = &model.Thread{
-			ID:     thrd.ID(),
-			Title:  thrd.Title(),
-			Closed: thrd.Closed(),
+			ID:        thrd.ID(),
+			Title:     thrd.Title(),
+			Closed:    thrd.Closed(),
+			CreatedAt: thrd.CreatedAt().Format(time.RFC3339),
 		}
 	}
 	return res, nil

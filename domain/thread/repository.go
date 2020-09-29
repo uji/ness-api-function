@@ -102,9 +102,10 @@ func (i *item) toThread() Thread {
 	}
 
 	return &thread{
-		id:     i.SK,
-		title:  i.Content,
-		closed: clsd,
+		id:        i.SK,
+		title:     i.Content,
+		closed:    clsd,
+		createdAt: i.CreatedAt,
 	}
 }
 
