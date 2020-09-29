@@ -1,23 +1,36 @@
 package thread
 
-import "time"
+import (
+	"time"
+)
 
-type Thread struct {
-	id        string
-	title     string
-	closed    bool
-	createdAt time.Time
-}
+type (
+	thread struct {
+		id        string
+		title     string
+		closed    bool
+		createdAt time.Time
+	}
 
-func (t Thread) ID() string {
+	Thread interface {
+		ID() string
+		Title() string
+		Closed() bool
+		CreatedAt() time.Time
+	}
+)
+
+var _ Thread = &thread{}
+
+func (t *thread) ID() string {
 	return t.id
 }
-func (t Thread) Title() string {
+func (t *thread) Title() string {
 	return t.title
 }
-func (t Thread) Closed() bool {
+func (t *thread) Closed() bool {
 	return t.closed
 }
-func (t Thread) CreatedAt() time.Time {
+func (t *thread) CreatedAt() time.Time {
 	return t.createdAt
 }

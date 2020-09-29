@@ -15,7 +15,7 @@ func TestRepoGet(t *testing.T) {
 		items           []item
 		limit           int64
 		lastEvaluatedID sql.NullString
-		expt            []*Thread
+		expt            []Thread
 		err             error
 	}{
 		{
@@ -36,13 +36,13 @@ func TestRepoGet(t *testing.T) {
 			},
 			limit:           5,
 			lastEvaluatedID: sql.NullString{},
-			expt: []*Thread{
-				{
+			expt: []Thread{
+				&thread{
 					id:     "Thread#0",
 					title:  "Thread0",
 					closed: false,
 				},
-				{
+				&thread{
 					id:     "Thread#1",
 					title:  "Thread1",
 					closed: true,
@@ -67,8 +67,8 @@ func TestRepoGet(t *testing.T) {
 			},
 			limit:           1,
 			lastEvaluatedID: sql.NullString{},
-			expt: []*Thread{
-				{
+			expt: []Thread{
+				&thread{
 					id:     "Thread#0",
 					title:  "Thread0",
 					closed: false,
@@ -93,8 +93,8 @@ func TestRepoGet(t *testing.T) {
 			},
 			limit:           1,
 			lastEvaluatedID: sql.NullString{String: "Thread#0", Valid: true},
-			expt: []*Thread{
-				{
+			expt: []Thread{
+				&thread{
 					id:     "Thread#1",
 					title:  "Thread1",
 					closed: true,
@@ -137,7 +137,7 @@ func TestRepoGet(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			opt := cmp.AllowUnexported(Thread{})
+			opt := cmp.AllowUnexported(thread{})
 			if diff := cmp.Diff(c.expt, res, opt); diff != "" {
 				t.Fatal(diff)
 			}
@@ -152,7 +152,7 @@ func TestRepoCreate(t *testing.T) {
 
 	sut := NewDynamoRepository(dnmdb, tbl.Name())
 
-	thrd := Thread{
+	thrd := thread{
 		id:     "thread1",
 		title:  "thread1",
 		closed: false,
@@ -167,7 +167,7 @@ func TestRepoCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	opt := cmp.AllowUnexported(Thread{})
+	opt := cmp.AllowUnexported(thread{})
 	if diff := cmp.Diff(&thrd, res, opt); diff != "" {
 		t.Fatal(diff)
 	}

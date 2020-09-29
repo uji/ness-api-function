@@ -28,7 +28,7 @@ func NewDynamoRepository(
 	return &repository{&tbl}
 }
 
-func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]*Thread, error) {
+func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Thread, error) {
 	var items []item
 	teamID := "Team#0"
 
@@ -46,14 +46,14 @@ func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]*Thre
 		return nil, repositoryError(err)
 	}
 
-	rslts := make([]*Thread, len(items))
+	rslts := make([]Thread, len(items))
 	for i, item := range items {
 		rslts[i] = item.toThread()
 	}
 	return rslts, nil
 }
 
-func (d *repository) create(ctx context.Context, req repositoryCreateRequest) (*Thread, error) {
+func (d *repository) create(ctx context.Context, req repositoryCreateRequest) (Thread, error) {
 	condition := "attribute_not_exists(PK) AND attribute_not_exists(SK) "
 	itm := newItem(req.thread)
 
@@ -80,7 +80,7 @@ type item struct {
 	CreatedAt time.Time `dynamo:"CreatedAt"`
 }
 
-func newItem(thread *Thread) *item {
+func newItem(thread Thread) *item {
 	clsd := "false"
 	if thread.Closed() {
 		clsd = "true"
@@ -91,17 +91,17 @@ func newItem(thread *Thread) *item {
 		SK:        thread.ID(),
 		Content:   thread.Title(),
 		Closed:    clsd,
-		CreatedAt: time.Now(),
+		CreatedAt: thread.CreatedAt(),
 	}
 }
 
-func (i *item) toThread() *Thread {
+func (i *item) toThread() Thread {
 	clsd := false
 	if i.Closed == "true" {
 		clsd = true
 	}
 
-	return &Thread{
+	return &thread{
 		id:     i.SK,
 		title:  i.Content,
 		closed: clsd,

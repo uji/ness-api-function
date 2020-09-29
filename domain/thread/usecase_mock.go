@@ -34,10 +34,10 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 }
 
 // get mocks base method
-func (m *MockRepository) get(arg0 context.Context, arg1 repositoryGetRequest) ([]*Thread, error) {
+func (m *MockRepository) get(arg0 context.Context, arg1 repositoryGetRequest) ([]Thread, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "get", arg0, arg1)
-	ret0, _ := ret[0].([]*Thread)
+	ret0, _ := ret[0].([]Thread)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -49,10 +49,10 @@ func (mr *MockRepositoryMockRecorder) get(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // create mocks base method
-func (m *MockRepository) create(arg0 context.Context, arg1 repositoryCreateRequest) (*Thread, error) {
+func (m *MockRepository) create(arg0 context.Context, arg1 repositoryCreateRequest) (Thread, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "create", arg0, arg1)
-	ret0, _ := ret[0].(*Thread)
+	ret0, _ := ret[0].(Thread)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

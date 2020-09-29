@@ -10,9 +10,8 @@ import (
 )
 
 func newThreadUsecase(dnmdb *dynamo.DB) *thread.Usecase {
-	gen := thread.NewGeneratorConfigured()
 	rp := thread.NewDynamoRepository(dnmdb, db.ThreadTableName)
-	return thread.NewUsecase(gen, rp)
+	return thread.NewUsecase(thread.DefaultGenerator, rp)
 }
 
 func NewRegisterdServer() *handler.Server {

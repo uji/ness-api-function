@@ -28,15 +28,15 @@ func TestUsecaseGet(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			gen := NewGeneratorConfigured()
+			gen := DefaultGenerator
 			repo := NewMockRepository(ctrl)
-			threads := []*Thread{
-				{
+			threads := []Thread{
+				&thread{
 					id:     "thread1",
 					title:  "thread1",
 					closed: false,
 				},
-				{
+				&thread{
 					id:     "thread2",
 					title:  "thread2",
 					closed: true,
@@ -67,7 +67,7 @@ func TestUsecaseGet(t *testing.T) {
 			}
 
 			opts := cmp.Options{
-				cmp.AllowUnexported(Thread{}),
+				cmp.AllowUnexported(thread{}),
 			}
 			if diff := cmp.Diff(threads, res, opts); diff != "" {
 				t.Fatal(res)
@@ -100,15 +100,15 @@ func TestUsecaseCreate(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			thrd := Thread{
+			thrd := thread{
 				id:     "thread1",
 				title:  c.title,
 				closed: false,
 			}
 
-			gen := NewGenerator(func(title string) (*Thread, error) {
+			gen := func(attr ThreadAttribute) (Thread, error) {
 				return &thrd, nil
-			})
+			}
 
 			repo := NewMockRepository(ctrl)
 			if c.useRepository {
@@ -132,7 +132,7 @@ func TestUsecaseCreate(t *testing.T) {
 			}
 
 			opts := cmp.Options{
-				cmp.AllowUnexported(Thread{}),
+				cmp.AllowUnexported(thread{}),
 			}
 			if diff := cmp.Diff(&thrd, res, opts); diff != "" {
 				t.Fatal(diff)

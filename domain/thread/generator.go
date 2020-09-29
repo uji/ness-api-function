@@ -1,32 +1,27 @@
 package thread
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type (
-	Generator struct {
-		generate func(title string) (*Thread, error)
+	Generator func(attr ThreadAttribute) (Thread, error)
+
+	ThreadAttribute struct {
+		Title string
 	}
 )
 
-func NewGeneratorConfigured() *Generator {
-	return &Generator{
-		func(title string) (*Thread, error) {
-			id := "Thread#" + uuid.New().String()
-			return &Thread{
-				id:     id,
-				title:  title,
-				closed: false,
-			}, nil
-		},
-	}
-}
+var _ Generator = DefaultGenerator
 
-func NewGenerator(
-	genFunc func(title string) (*Thread, error),
-) *Generator {
-	return &Generator{genFunc}
-}
-
-func (f *Generator) Generate(title string) (*Thread, error) {
-	return f.generate(title)
+func DefaultGenerator(attr ThreadAttribute) (Thread, error) {
+	id := "Thread#" + uuid.New().String()
+	return &thread{
+		id:        id,
+		title:     attr.Title,
+		closed:    false,
+		createdAt: time.Now(),
+	}, nil
 }

@@ -11,13 +11,13 @@ const (
 
 type (
 	Usecase struct {
-		gen  *Generator
+		gen  Generator
 		repo Repository
 	}
 
 	Repository interface {
-		get(context.Context, repositoryGetRequest) ([]*Thread, error)
-		create(context.Context, repositoryCreateRequest) (*Thread, error)
+		get(context.Context, repositoryGetRequest) ([]Thread, error)
+		create(context.Context, repositoryCreateRequest) (Thread, error)
 	}
 
 	repositoryGetRequest struct {
@@ -26,11 +26,11 @@ type (
 	}
 
 	repositoryCreateRequest struct {
-		thread *Thread
+		thread Thread
 	}
 )
 
-func NewUsecase(gen *Generator, repo Repository) *Usecase {
+func NewUsecase(gen Generator, repo Repository) *Usecase {
 	return &Usecase{gen, repo}
 }
 
@@ -39,7 +39,7 @@ type GetRequest struct {
 	LastEvaluatedID *string
 }
 
-func (u *Usecase) Get(ctx context.Context, req GetRequest) ([]*Thread, error) {
+func (u *Usecase) Get(ctx context.Context, req GetRequest) ([]Thread, error) {
 	var l int64
 	if req.Limit == nil {
 		l = defaultLimit
@@ -63,11 +63,13 @@ type (
 	}
 )
 
-func (u *Usecase) Create(ctx context.Context, req CreateRequest) (*Thread, error) {
+func (u *Usecase) Create(ctx context.Context, req CreateRequest) (Thread, error) {
 	if req.Title == "" {
 		return nil, ErrorTitleIsRequired
 	}
-	th, err := u.gen.Generate(req.Title)
+	th, err := u.gen(ThreadAttribute{
+		Title: req.Title,
+	})
 	if err != nil {
 		return nil, err
 	}
