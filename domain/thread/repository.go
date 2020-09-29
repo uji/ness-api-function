@@ -3,6 +3,7 @@ package thread
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -72,10 +73,11 @@ func (d *repository) create(ctx context.Context, req repositoryCreateRequest) (*
 }
 
 type item struct {
-	PK      string // Hash key
-	SK      string // Range key
-	Content string `dynamo:"Content"`
-	Closed  string `dynamo:"Closed"`
+	PK        string    // Hash key
+	SK        string    // Range key
+	Content   string    `dynamo:"Content"`
+	Closed    string    `dynamo:"Closed"`
+	CreatedAt time.Time `dynamo:"CreatedAt"`
 }
 
 func newItem(thread *Thread) *item {
@@ -85,10 +87,11 @@ func newItem(thread *Thread) *item {
 	}
 
 	return &item{
-		PK:      "Team#0",
-		SK:      thread.ID(),
-		Content: thread.Title(),
-		Closed:  clsd,
+		PK:        "Team#0",
+		SK:        thread.ID(),
+		Content:   thread.Title(),
+		Closed:    clsd,
+		CreatedAt: time.Now(),
 	}
 }
 

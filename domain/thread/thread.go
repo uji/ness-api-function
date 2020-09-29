@@ -1,9 +1,12 @@
 package thread
 
+import "time"
+
 type Thread struct {
-	id     string
-	title  string
-	closed bool
+	id        string
+	title     string
+	closed    bool
+	createdAt time.Time
 }
 
 func (t Thread) ID() string {
@@ -14,4 +17,7 @@ func (t Thread) Title() string {
 }
 func (t Thread) Closed() bool {
 	return t.closed
+}
+func (t Thread) CreatedAt() time.Time {
+	return t.createdAt
 }
