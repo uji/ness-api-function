@@ -15,29 +15,41 @@ func TestUsecaseGet(t *testing.T) {
 	lststr := lst.Format(time.RFC3339)
 
 	cases := []struct {
-		name    string
-		req     GetRequest
-		repoReq repositoryGetRequest
+		name     string
+		req      GetRequest
+		repoReq  repositoryGetRequest
+		callRepo bool
+		err      error
 	}{
 		{
-			name:    "normal",
-			req:     GetRequest{null.IntFrom(5), null.StringFrom(lststr)},
-			repoReq: repositoryGetRequest{5, null.TimeFrom(lst)},
+			name:     "normal",
+			req:      GetRequest{null.IntFrom(5), null.StringFrom(lststr)},
+			repoReq:  repositoryGetRequest{5, null.TimeFrom(lst)},
+			callRepo: true,
 		},
 		{
-			name:    "limit too small",
-			req:     GetRequest{null.IntFrom(-1), null.String{}},
-			repoReq: repositoryGetRequest{1, null.Time{}},
+			name:     "limit too small",
+			req:      GetRequest{null.IntFrom(-1), null.String{}},
+			repoReq:  repositoryGetRequest{1, null.Time{}},
+			callRepo: true,
 		},
 		{
-			name:    "limit too big",
-			req:     GetRequest{null.IntFrom(101), null.String{}},
-			repoReq: repositoryGetRequest{100, null.Time{}},
+			name:     "limit too big",
+			req:      GetRequest{null.IntFrom(101), null.String{}},
+			repoReq:  repositoryGetRequest{100, null.Time{}},
+			callRepo: true,
 		},
 		{
-			name:    "limit too big",
-			req:     GetRequest{null.Int{}, null.String{}},
-			repoReq: repositoryGetRequest{30, null.Time{}},
+			name:     "limit too big",
+			req:      GetRequest{null.Int{}, null.String{}},
+			repoReq:  repositoryGetRequest{30, null.Time{}},
+			callRepo: true,
+		},
+		{
+			name:     "last evaluated time format invalid",
+			req:      GetRequest{null.IntFrom(5), null.StringFrom("test")},
+			callRepo: false,
+			err:      ErrorTimeFormatInValid,
 		},
 	}
 
@@ -60,16 +72,22 @@ func TestUsecaseGet(t *testing.T) {
 					closed: true,
 				},
 			}
-			repo.EXPECT().get(
-				context.Background(),
-				c.repoReq,
-			).Return(threads, nil)
+
+			if c.callRepo {
+				repo.EXPECT().get(
+					context.Background(),
+					c.repoReq,
+				).Return(threads, nil)
+			}
 
 			uc := NewUsecase(gen, repo)
 
 			res, err := uc.Get(context.Background(), c.req)
-			if err != nil {
+			if err != c.err {
 				t.Fatal(err)
+			}
+			if c.err != nil {
+				return
 			}
 
 			opts := cmp.Options{
