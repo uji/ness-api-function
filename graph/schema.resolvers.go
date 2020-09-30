@@ -11,6 +11,7 @@ import (
 	"example.com/ness-api-function/domain/thread"
 	"example.com/ness-api-function/graph/generated"
 	"example.com/ness-api-function/graph/model"
+	"github.com/guregu/null"
 )
 
 func (r *mutationResolver) CreateThread(ctx context.Context, input model.NewThread) (*model.Thread, error) {
@@ -36,9 +37,11 @@ func (r *queryResolver) Node(ctx context.Context, id string) (model.Node, error)
 }
 
 func (r *queryResolver) Threads(ctx context.Context, input model.GetThreadsInput) ([]*model.Thread, error) {
+	l := null.IntFrom(int64(*input.Limit))
+	lst := null.StringFromPtr(input.LastEvaluatedID)
 	thrds, err := r.thread.Get(ctx, thread.GetRequest{
-		Limit:           input.Limit,
-		LastEvaluatedID: input.LastEvaluatedID,
+		Limit:             l,
+		LastEvaluatedTime: lst,
 	})
 	if err != nil {
 		return nil, err

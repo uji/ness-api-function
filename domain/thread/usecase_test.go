@@ -2,26 +2,44 @@ package thread
 
 import (
 	"context"
-	"database/sql"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
+	"github.com/guregu/null"
 )
 
 func TestUsecaseGet(t *testing.T) {
-	cases := []struct {
-		name     string
-		reqLimit sql.NullInt64
-		limit    int64
-	}{
-		{"normal", nInt64(5), 5},
-		{"limit too small", nInt64(-1), 1},
-		{"limit too big", nInt64(101), 100},
-		{"limit is null", sql.NullInt64{}, 30},
-	}
+	lst := time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC)
+	lststr := lst.Format(time.RFC3339)
 
-	lastEvaluatedID := "lastEvaluatedID"
+	cases := []struct {
+		name    string
+		req     GetRequest
+		repoReq repositoryGetRequest
+	}{
+		{
+			name:    "normal",
+			req:     GetRequest{null.IntFrom(5), null.StringFrom(lststr)},
+			repoReq: repositoryGetRequest{5, null.TimeFrom(lst)},
+		},
+		{
+			name:    "limit too small",
+			req:     GetRequest{null.IntFrom(-1), null.String{}},
+			repoReq: repositoryGetRequest{1, null.Time{}},
+		},
+		{
+			name:    "limit too big",
+			req:     GetRequest{null.IntFrom(101), null.String{}},
+			repoReq: repositoryGetRequest{100, null.Time{}},
+		},
+		{
+			name:    "limit too big",
+			req:     GetRequest{null.Int{}, null.String{}},
+			repoReq: repositoryGetRequest{30, null.Time{}},
+		},
+	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -44,24 +62,12 @@ func TestUsecaseGet(t *testing.T) {
 			}
 			repo.EXPECT().get(
 				context.Background(),
-				repositoryGetRequest{
-					limit:           c.limit,
-					lastEvaluatedID: &lastEvaluatedID,
-				},
+				c.repoReq,
 			).Return(threads, nil)
 
 			uc := NewUsecase(gen, repo)
 
-			l := new(int)
-			if c.reqLimit.Valid {
-				*l = int(c.reqLimit.Int64)
-			} else {
-				l = nil
-			}
-			res, err := uc.Get(context.Background(), GetRequest{
-				Limit:           l,
-				LastEvaluatedID: &lastEvaluatedID,
-			})
+			res, err := uc.Get(context.Background(), c.req)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -73,13 +79,6 @@ func TestUsecaseGet(t *testing.T) {
 				t.Fatal(res)
 			}
 		})
-	}
-}
-
-func nInt64(n int64) sql.NullInt64 {
-	return sql.NullInt64{
-		Int64: n,
-		Valid: true,
 	}
 }
 

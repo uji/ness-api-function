@@ -2,6 +2,9 @@ package thread
 
 import (
 	"context"
+	"time"
+
+	"github.com/guregu/null"
 )
 
 const (
@@ -21,8 +24,8 @@ type (
 	}
 
 	repositoryGetRequest struct {
-		limit           int64
-		lastEvaluatedID *string
+		limit             int64
+		lastEvaluatedTime null.Time
 	}
 
 	repositoryCreateRequest struct {
@@ -35,25 +38,32 @@ func NewUsecase(gen Generator, repo Repository) *Usecase {
 }
 
 type GetRequest struct {
-	Limit           *int
-	LastEvaluatedID *string
+	Limit             null.Int
+	LastEvaluatedTime null.String
 }
 
 func (u *Usecase) Get(ctx context.Context, req GetRequest) ([]Thread, error) {
-	var l int64
-	if req.Limit == nil {
+	l := req.Limit.Int64
+	if !req.Limit.Valid {
 		l = defaultLimit
-	} else if *req.Limit < 1 {
+	} else if l < 1 {
 		l = 1
-	} else if *req.Limit > maxLimit {
+	} else if l > maxLimit {
 		l = maxLimit
-	} else {
-		l = int64(*req.Limit)
+	}
+
+	var lst null.Time
+	if req.LastEvaluatedTime.Valid {
+		t, err := time.Parse(time.RFC3339, req.LastEvaluatedTime.String)
+		if err != nil {
+			return nil, ErrorTimeFormatInValid
+		}
+		lst = null.TimeFrom(t)
 	}
 
 	return u.repo.get(ctx, repositoryGetRequest{
-		limit:           l,
-		lastEvaluatedID: req.LastEvaluatedID,
+		limit:             l,
+		lastEvaluatedTime: lst,
 	})
 }
 

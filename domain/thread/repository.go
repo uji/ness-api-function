@@ -32,13 +32,9 @@ func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Threa
 	var items []item
 	teamID := "Team#0"
 
-	qr := d.tbl.Get("PK", teamID).Limit(req.limit)
-	if req.lastEvaluatedID != nil {
-		if *req.lastEvaluatedID == "" {
-			return nil, ErrorLastEvaluatedIDCanNotBeBlank
-		}
-		pkey := newPagingKey(teamID, *req.lastEvaluatedID)
-		qr = qr.StartFrom(pkey)
+	qr := d.tbl.Get("PK", teamID).Index("PK-CreatedAt-index").Order(false).Limit(req.limit)
+	if req.lastEvaluatedTime.Valid {
+		qr = qr.Range("CreatedAt", dynamo.Less, req.lastEvaluatedTime.Time)
 	}
 
 	err := qr.All(&items)
@@ -106,16 +102,5 @@ func (i *item) toThread() Thread {
 		title:     i.Content,
 		closed:    clsd,
 		createdAt: i.CreatedAt,
-	}
-}
-
-func newPagingKey(teamID string, threadID string) dynamo.PagingKey {
-	return dynamo.PagingKey{
-		"PK": &dynamodb.AttributeValue{
-			S: &teamID,
-		},
-		"SK": &dynamodb.AttributeValue{
-			S: &threadID,
-		},
 	}
 }

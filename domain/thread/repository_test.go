@@ -2,50 +2,55 @@ package thread
 
 import (
 	"context"
-	"database/sql"
 	"testing"
+	"time"
 
 	"example.com/ness-api-function/infra/db"
 	"github.com/google/go-cmp/cmp"
+	"github.com/guregu/null"
 )
 
 func TestRepoGet(t *testing.T) {
 	cases := []struct {
-		name            string
-		items           []item
-		limit           int64
-		lastEvaluatedID sql.NullString
-		expt            []Thread
-		err             error
+		name     string
+		items    []item
+		limit    int64
+		lastTime null.Time
+		expt     []Thread
+		err      error
 	}{
 		{
 			name: "normal",
 			items: []item{
 				{
-					PK:      "Team#0",
-					SK:      "Thread#0",
-					Content: "Thread0",
-					Closed:  "false",
+					PK:        "Team#0",
+					SK:        "Thread#0",
+					Content:   "Thread0",
+					Closed:    "false",
+					CreatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
 				},
 				{
-					PK:      "Team#0",
-					SK:      "Thread#1",
-					Content: "Thread1",
-					Closed:  "true",
+					PK:        "Team#0",
+					SK:        "Thread#1",
+					Content:   "Thread1",
+					Closed:    "true",
+					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
 				},
 			},
-			limit:           5,
-			lastEvaluatedID: sql.NullString{},
+			limit:    5,
+			lastTime: null.Time{},
 			expt: []Thread{
 				&thread{
-					id:     "Thread#0",
-					title:  "Thread0",
-					closed: false,
+					id:        "Thread#1",
+					title:     "Thread1",
+					closed:    true,
+					createdAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
 				},
 				&thread{
-					id:     "Thread#1",
-					title:  "Thread1",
-					closed: true,
+					id:        "Thread#0",
+					title:     "Thread0",
+					closed:    false,
+					createdAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
 				},
 			},
 		},
@@ -53,25 +58,28 @@ func TestRepoGet(t *testing.T) {
 			name: "limited",
 			items: []item{
 				{
-					PK:      "Team#0",
-					SK:      "Thread#0",
-					Content: "Thread0",
-					Closed:  "false",
+					PK:        "Team#0",
+					SK:        "Thread#0",
+					Content:   "Thread0",
+					Closed:    "false",
+					CreatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
 				},
 				{
-					PK:      "Team#0",
-					SK:      "Thread#1",
-					Content: "Thread1",
-					Closed:  "true",
+					PK:        "Team#0",
+					SK:        "Thread#1",
+					Content:   "Thread1",
+					Closed:    "true",
+					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
 				},
 			},
-			limit:           1,
-			lastEvaluatedID: sql.NullString{},
+			limit:    1,
+			lastTime: null.Time{},
 			expt: []Thread{
 				&thread{
-					id:     "Thread#0",
-					title:  "Thread0",
-					closed: false,
+					id:        "Thread#1",
+					title:     "Thread1",
+					closed:    true,
+					createdAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
 				},
 			},
 		},
@@ -79,35 +87,30 @@ func TestRepoGet(t *testing.T) {
 			name: "limited and set lastEvaluatedID",
 			items: []item{
 				{
-					PK:      "Team#0",
-					SK:      "Thread#0",
-					Content: "Thread0",
-					Closed:  "false",
+					PK:        "Team#0",
+					SK:        "Thread#0",
+					Content:   "Thread0",
+					Closed:    "false",
+					CreatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
 				},
 				{
-					PK:      "Team#0",
-					SK:      "Thread#1",
-					Content: "Thread1",
-					Closed:  "true",
+					PK:        "Team#0",
+					SK:        "Thread#1",
+					Content:   "Thread1",
+					Closed:    "true",
+					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
 				},
 			},
-			limit:           1,
-			lastEvaluatedID: sql.NullString{String: "Thread#0", Valid: true},
+			limit:    1,
+			lastTime: null.TimeFrom(time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC)),
 			expt: []Thread{
 				&thread{
-					id:     "Thread#1",
-					title:  "Thread1",
-					closed: true,
+					id:        "Thread#0",
+					title:     "Thread0",
+					closed:    false,
+					createdAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
 				},
 			},
-		},
-		{
-			name:            "lastEvaluatedID present and blank",
-			items:           []item{},
-			limit:           1,
-			lastEvaluatedID: sql.NullString{String: "", Valid: true},
-			expt:            nil,
-			err:             ErrorLastEvaluatedIDCanNotBeBlank,
 		},
 	}
 
@@ -125,13 +128,9 @@ func TestRepoGet(t *testing.T) {
 				}
 			}
 
-			var lstevltdid *string = nil
-			if c.lastEvaluatedID.Valid {
-				lstevltdid = &c.lastEvaluatedID.String
-			}
 			res, err := sut.get(context.Background(), repositoryGetRequest{
-				limit:           c.limit,
-				lastEvaluatedID: lstevltdid,
+				limit:             c.limit,
+				lastEvaluatedTime: c.lastTime,
 			})
 			if err != c.err {
 				t.Fatal(err)
