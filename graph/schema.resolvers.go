@@ -38,7 +38,7 @@ func (r *queryResolver) Node(ctx context.Context, id string) (model.Node, error)
 
 func (r *queryResolver) Threads(ctx context.Context, input model.GetThreadsInput) ([]*model.Thread, error) {
 	l := null.IntFrom(int64(*input.Limit))
-	lst := null.StringFromPtr(input.LastEvaluatedID)
+	lst := null.StringFromPtr(input.LastEvaluatedTime)
 	thrds, err := r.thread.Get(ctx, thread.GetRequest{
 		Limit:             l,
 		LastEvaluatedTime: lst,

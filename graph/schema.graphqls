@@ -17,7 +17,7 @@ type Thread implements Node {
 
 input GetThreadsInput {
   limit: Int
-  lastEvaluatedID: ID
+  lastEvaluatedTime: DateTime
   closed: Boolean
 }
 

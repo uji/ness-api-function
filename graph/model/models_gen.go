@@ -11,9 +11,9 @@ type CloseThread struct {
 }
 
 type GetThreadsInput struct {
-	Limit           *int    `json:"limit"`
-	LastEvaluatedID *string `json:"lastEvaluatedID"`
-	Closed          *bool   `json:"closed"`
+	Limit             *int    `json:"limit"`
+	LastEvaluatedTime *string `json:"lastEvaluatedTime"`
+	Closed            *bool   `json:"closed"`
 }
 
 type NewThread struct {

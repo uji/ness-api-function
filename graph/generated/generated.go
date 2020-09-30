@@ -245,7 +245,7 @@ type Thread implements Node {
 
 input GetThreadsInput {
   limit: Int
-  lastEvaluatedID: ID
+  lastEvaluatedTime: DateTime
   closed: Boolean
 }
 
@@ -1842,11 +1842,11 @@ func (ec *executionContext) unmarshalInputGetThreadsInput(ctx context.Context, o
 			if err != nil {
 				return it, err
 			}
-		case "lastEvaluatedID":
+		case "lastEvaluatedTime":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("lastEvaluatedID"))
-			it.LastEvaluatedID, err = ec.unmarshalOID2ᚖstring(ctx, v)
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("lastEvaluatedTime"))
+			it.LastEvaluatedTime, err = ec.unmarshalODateTime2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2675,19 +2675,19 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return graphql.MarshalBoolean(*v)
 }
 
-func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
+func (ec *executionContext) unmarshalODateTime2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
 	if v == nil {
 		return nil, nil
 	}
-	res, err := graphql.UnmarshalID(v)
+	res, err := graphql.UnmarshalString(v)
 	return &res, graphql.WrapErrorWithInputPath(ctx, err)
 }
 
-func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
+func (ec *executionContext) marshalODateTime2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
-	return graphql.MarshalID(*v)
+	return graphql.MarshalString(*v)
 }
 
 func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
