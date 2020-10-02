@@ -23,5 +23,6 @@ func DefaultGenerator(attr ThreadAttribute) (Thread, error) {
 		title:     attr.Title,
 		closed:    false,
 		createdAt: time.Now(),
+		updatedAt: time.Now(),
 	}, nil
 }
