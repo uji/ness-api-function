@@ -13,6 +13,7 @@ type Thread implements Node {
   title: String!
   closed: Boolean!
   createdAt: DateTime!
+  updatedAt: DateTime!
 }
 
 input GetThreadsInput {
@@ -36,5 +37,5 @@ input CloseThread {
 
 type Mutation {
   createThread(input: NewThread!): Thread!
-  closeThread(input: CloseThread!): Boolean
+  closeThread(input: CloseThread!): Thread!
 }

@@ -25,6 +25,7 @@ type Thread struct {
 	Title     string `json:"title"`
 	Closed    bool   `json:"closed"`
 	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
 }
 
 func (Thread) IsNode() {}

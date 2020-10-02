@@ -14,6 +14,16 @@ import (
 	"github.com/guregu/null"
 )
 
+func cnvThread(thread thread.Thread) *model.Thread {
+	return &model.Thread{
+		ID:        thread.ID(),
+		Title:     thread.Title(),
+		Closed:    thread.Closed(),
+		CreatedAt: thread.CreatedAt().Format(time.RFC3339),
+		UpdatedAt: thread.UpdatedAt().Format(time.RFC3339),
+	}
+}
+
 func (r *mutationResolver) CreateThread(ctx context.Context, input model.NewThread) (*model.Thread, error) {
 	res, err := r.thread.Create(ctx, thread.CreateRequest{
 		Title: input.Title,
@@ -21,15 +31,14 @@ func (r *mutationResolver) CreateThread(ctx context.Context, input model.NewThre
 	if err != nil {
 		return nil, err
 	}
-	return &model.Thread{
-		ID:     res.ID(),
-		Title:  res.Title(),
-		Closed: res.Closed(),
-	}, nil
+	return cnvThread(res), nil
 }
 
-func (r *mutationResolver) CloseThread(ctx context.Context, input model.CloseThread) (*bool, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) CloseThread(ctx context.Context, input model.CloseThread) (*model.Thread, error) {
+	res, err := r.thread.Close(ctx, thread.CloseRequest{
+		ThreadID: input.ThreadID,
+	})
+	return cnvThread(res), err
 }
 
 func (r *queryResolver) Node(ctx context.Context, id string) (model.Node, error) {
@@ -48,12 +57,7 @@ func (r *queryResolver) Threads(ctx context.Context, input model.GetThreadsInput
 	}
 	res := make([]*model.Thread, len(thrds))
 	for i, thrd := range thrds {
-		res[i] = &model.Thread{
-			ID:        thrd.ID(),
-			Title:     thrd.Title(),
-			Closed:    thrd.Closed(),
-			CreatedAt: thrd.CreatedAt().Format(time.RFC3339),
-		}
+		res[i] = cnvThread(thrd)
 	}
 	return res, nil
 }
