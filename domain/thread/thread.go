@@ -10,6 +10,7 @@ type (
 		title     string
 		closed    bool
 		createdAt time.Time
+		updatedAt time.Time
 	}
 
 	Thread interface {
@@ -17,6 +18,8 @@ type (
 		Title() string
 		Closed() bool
 		CreatedAt() time.Time
+		UpdatedAt() time.Time
+		Close()
 	}
 )
 
@@ -33,4 +36,12 @@ func (t *thread) Closed() bool {
 }
 func (t *thread) CreatedAt() time.Time {
 	return t.createdAt
+}
+func (t *thread) UpdatedAt() time.Time {
+	return t.updatedAt
+}
+
+func (t *thread) Close() {
+	t.closed = true
+	t.updatedAt = time.Now()
 }

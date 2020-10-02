@@ -21,6 +21,8 @@ type (
 	Repository interface {
 		get(context.Context, repositoryGetRequest) ([]Thread, error)
 		create(context.Context, repositoryCreateRequest) (Thread, error)
+		update(context.Context, repositoryUpdateRequest) (Thread, error)
+		close(context.Context, repositoryCloseRequest) (Thread, error)
 	}
 
 	repositoryGetRequest struct {
@@ -30,6 +32,14 @@ type (
 
 	repositoryCreateRequest struct {
 		thread Thread
+	}
+
+	repositoryUpdateRequest struct {
+		thread Thread
+	}
+
+	repositoryCloseRequest struct {
+		threadID string
 	}
 )
 
@@ -86,4 +96,15 @@ func (u *Usecase) Create(ctx context.Context, req CreateRequest) (Thread, error)
 	return u.repo.create(ctx, repositoryCreateRequest{
 		thread: th,
 	})
+}
+
+type CloseRequest struct {
+	ThreadID string
+}
+
+func (u *Usecase) Close(ctx context.Context, req CloseRequest) (Thread, error) {
+	res, err := u.repo.close(ctx, repositoryCloseRequest{
+		threadID: req.ThreadID,
+	})
+	return res, err
 }

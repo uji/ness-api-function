@@ -62,3 +62,33 @@ func (mr *MockRepositoryMockRecorder) create(arg0, arg1 interface{}) *gomock.Cal
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "create", reflect.TypeOf((*MockRepository)(nil).create), arg0, arg1)
 }
+
+// update mocks base method
+func (m *MockRepository) update(arg0 context.Context, arg1 repositoryUpdateRequest) (Thread, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "update", arg0, arg1)
+	ret0, _ := ret[0].(Thread)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// update indicates an expected call of update
+func (mr *MockRepositoryMockRecorder) update(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "update", reflect.TypeOf((*MockRepository)(nil).update), arg0, arg1)
+}
+
+// close mocks base method
+func (m *MockRepository) close(arg0 context.Context, arg1 repositoryCloseRequest) (Thread, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "close", arg0, arg1)
+	ret0, _ := ret[0].(Thread)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// close indicates an expected call of close
+func (mr *MockRepositoryMockRecorder) close(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "close", reflect.TypeOf((*MockRepository)(nil).close), arg0, arg1)
+}

@@ -171,3 +171,109 @@ func TestRepoCreate(t *testing.T) {
 		t.Fatal(diff)
 	}
 }
+
+func testRepo_update(
+	t *testing.T,
+	items []item,
+	req repositoryUpdateRequest,
+	errMsg string,
+) {
+	dnmdb := db.NewDynamoDB()
+	tbl := db.CreateThreadTestTable(dnmdb, t)
+	defer tbl.DeleteTable().Run()
+
+	sut := NewDynamoRepository(dnmdb, tbl.Name())
+
+	for _, itm := range items {
+		tbl.Put(itm).Run()
+	}
+
+	res, err := sut.update(
+		context.Background(),
+		req,
+	)
+	if errMsg == "" {
+		if err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err.Error() != errMsg {
+			t.Fatal(err)
+		}
+		return
+	}
+
+	opt := cmp.AllowUnexported(thread{})
+	if diff := cmp.Diff(req.thread, res, opt); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestRepo_update(t *testing.T) {
+	cases := []struct {
+		name   string
+		items  []item
+		req    repositoryUpdateRequest
+		errMsg string
+	}{
+		{
+			name: "normal",
+			items: []item{
+				{
+					PK:        "Team#0",
+					SK:        "Thread#0",
+					Content:   "thread0",
+					Closed:    "false",
+					CreatedAt: time.Date(2020, 10, 2, 0, 0, 0, 0, time.UTC),
+					UpdatedAt: time.Date(2020, 10, 2, 0, 0, 0, 0, time.UTC),
+				},
+				{
+					PK:        "Team#0",
+					SK:        "Thread#1",
+					Content:   "thread1",
+					Closed:    "true",
+					CreatedAt: time.Date(2020, 10, 3, 0, 0, 0, 0, time.UTC),
+					UpdatedAt: time.Date(2020, 10, 3, 12, 0, 0, 0, time.UTC),
+				},
+			},
+			req: repositoryUpdateRequest{
+				thread: &thread{
+					id:        "Thread#0",
+					title:     "thread0",
+					closed:    true,
+					createdAt: time.Date(2020, 10, 2, 0, 0, 0, 0, time.UTC),
+					updatedAt: time.Date(2020, 10, 2, 12, 0, 0, 0, time.UTC),
+				},
+			},
+		},
+		{
+			name: "dont create when not found",
+			items: []item{
+				{
+					PK:        "Team#0",
+					SK:        "Thread#1",
+					Content:   "thread1",
+					Closed:    "true",
+					CreatedAt: time.Date(2020, 10, 3, 0, 0, 0, 0, time.UTC),
+					UpdatedAt: time.Date(2020, 10, 3, 12, 0, 0, 0, time.UTC),
+				},
+			},
+			req: repositoryUpdateRequest{
+				thread: &thread{
+					id:        "Thread#0",
+					title:     "thread0",
+					closed:    true,
+					createdAt: time.Date(2020, 10, 2, 0, 0, 0, 0, time.UTC),
+					updatedAt: time.Date(2020, 10, 2, 12, 0, 0, 0, time.UTC),
+				},
+			},
+			errMsg: "ConditionalCheckFailedException: The conditional request failed",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			testRepo_update(t, c.items, c.req, c.errMsg)
+		})
+	}
+}

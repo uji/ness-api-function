@@ -11,6 +11,7 @@ import (
 )
 
 type repository struct {
+	db  *dynamo.DB
 	tbl *dynamo.Table
 }
 
@@ -25,7 +26,7 @@ func NewDynamoRepository(
 	tableName string,
 ) *repository {
 	tbl := db.Table(tableName)
-	return &repository{&tbl}
+	return &repository{db, &tbl}
 }
 
 func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Thread, error) {
@@ -50,7 +51,7 @@ func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Threa
 }
 
 func (d *repository) create(ctx context.Context, req repositoryCreateRequest) (Thread, error) {
-	condition := "attribute_not_exists(PK) AND attribute_not_exists(SK) "
+	condition := "attribute_not_exists(PK) AND attribute_not_exists(SK)"
 	itm := newItem(req.thread)
 
 	err := d.tbl.Put(&itm).If(condition).Run()
@@ -68,12 +69,33 @@ func (d *repository) create(ctx context.Context, req repositoryCreateRequest) (T
 	return req.thread, nil
 }
 
+func (d *repository) update(ctx context.Context, req repositoryUpdateRequest) (Thread, error) {
+	condition := "attribute_exists(PK) AND attribute_exists(SK)"
+	if err := d.tbl.Put(newItem(req.thread)).If(condition).Run(); err != nil {
+		return nil, err
+	}
+	return req.thread, nil
+}
+
+func (d *repository) close(ctx context.Context, req repositoryCloseRequest) (Thread, error) {
+	var itm item
+	if err := d.tbl.Get("PK", "Team#0").Range("SK", dynamo.Equal, req.threadID).One(&itm); err != nil {
+		return nil, err
+	}
+
+	th := itm.toThread()
+	th.Close()
+
+	return d.update(ctx, repositoryUpdateRequest{th})
+}
+
 type item struct {
 	PK        string    // Hash key
 	SK        string    // Range key
 	Content   string    `dynamo:"Content"`
 	Closed    string    `dynamo:"Closed"`
 	CreatedAt time.Time `dynamo:"CreatedAt"`
+	UpdatedAt time.Time `dynamo:"UpdatedAt"`
 }
 
 func newItem(thread Thread) *item {
@@ -88,6 +110,7 @@ func newItem(thread Thread) *item {
 		Content:   thread.Title(),
 		Closed:    clsd,
 		CreatedAt: thread.CreatedAt(),
+		UpdatedAt: thread.UpdatedAt(),
 	}
 }
 
@@ -102,5 +125,6 @@ func (i *item) toThread() Thread {
 		title:     i.Content,
 		closed:    clsd,
 		createdAt: i.CreatedAt,
+		updatedAt: i.UpdatedAt,
 	}
 }
