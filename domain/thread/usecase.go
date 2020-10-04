@@ -26,8 +26,8 @@ type (
 	}
 
 	repositoryGetRequest struct {
-		limit             int64
-		lastEvaluatedTime null.Time
+		limit      int64
+		offsetTime null.Time
 	}
 
 	repositoryCreateRequest struct {
@@ -48,8 +48,8 @@ func NewUsecase(gen Generator, repo Repository) *Usecase {
 }
 
 type GetRequest struct {
-	Limit             null.Int
-	LastEvaluatedTime null.String
+	Limit      null.Int
+	OffsetTime null.String
 }
 
 func (u *Usecase) Get(ctx context.Context, req GetRequest) ([]Thread, error) {
@@ -63,8 +63,8 @@ func (u *Usecase) Get(ctx context.Context, req GetRequest) ([]Thread, error) {
 	}
 
 	var lst null.Time
-	if req.LastEvaluatedTime.Valid {
-		t, err := time.Parse(time.RFC3339, req.LastEvaluatedTime.String)
+	if req.OffsetTime.Valid {
+		t, err := time.Parse(time.RFC3339, req.OffsetTime.String)
 		if err != nil {
 			return nil, ErrorTimeFormatInValid
 		}
@@ -72,8 +72,8 @@ func (u *Usecase) Get(ctx context.Context, req GetRequest) ([]Thread, error) {
 	}
 
 	return u.repo.get(ctx, repositoryGetRequest{
-		limit:             l,
-		lastEvaluatedTime: lst,
+		limit:      l,
+		offsetTime: lst,
 	})
 }
 

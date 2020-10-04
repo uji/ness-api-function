@@ -11,8 +11,8 @@ import (
 )
 
 func TestUsecaseGet(t *testing.T) {
-	lst := time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC)
-	lststr := lst.Format(time.RFC3339)
+	offsetTime := time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC)
+	offsetTimeStr := offsetTime.Format(time.RFC3339)
 
 	cases := []struct {
 		name     string
@@ -23,8 +23,8 @@ func TestUsecaseGet(t *testing.T) {
 	}{
 		{
 			name:     "normal",
-			req:      GetRequest{null.IntFrom(5), null.StringFrom(lststr)},
-			repoReq:  repositoryGetRequest{5, null.TimeFrom(lst)},
+			req:      GetRequest{null.IntFrom(5), null.StringFrom(offsetTimeStr)},
+			repoReq:  repositoryGetRequest{5, null.TimeFrom(offsetTime)},
 			callRepo: true,
 		},
 		{

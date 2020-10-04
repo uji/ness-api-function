@@ -14,16 +14,6 @@ import (
 	"github.com/guregu/null"
 )
 
-func cnvThread(thread thread.Thread) *model.Thread {
-	return &model.Thread{
-		ID:        thread.ID(),
-		Title:     thread.Title(),
-		Closed:    thread.Closed(),
-		CreatedAt: thread.CreatedAt().Format(time.RFC3339),
-		UpdatedAt: thread.UpdatedAt().Format(time.RFC3339),
-	}
-}
-
 func (r *mutationResolver) CreateThread(ctx context.Context, input model.NewThread) (*model.Thread, error) {
 	res, err := r.thread.Create(ctx, thread.CreateRequest{
 		Title: input.Title,
@@ -47,10 +37,10 @@ func (r *queryResolver) Node(ctx context.Context, id string) (model.Node, error)
 
 func (r *queryResolver) Threads(ctx context.Context, input model.GetThreadsInput) ([]*model.Thread, error) {
 	l := null.IntFrom(int64(*input.Limit))
-	lst := null.StringFromPtr(input.LastEvaluatedTime)
+	offset := null.StringFromPtr(input.OffsetTime)
 	thrds, err := r.thread.Get(ctx, thread.GetRequest{
-		Limit:             l,
-		LastEvaluatedTime: lst,
+		Limit:      l,
+		OffsetTime: offset,
 	})
 	if err != nil {
 		return nil, err
@@ -77,6 +67,15 @@ type queryResolver struct{ *Resolver }
 //  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //    it when you're done.
 //  - You have helper methods in this file. Move them out to keep these resolver files clean.
+func cnvThread(thread thread.Thread) *model.Thread {
+	return &model.Thread{
+		ID:        thread.ID(),
+		Title:     thread.Title(),
+		Closed:    thread.Closed(),
+		CreatedAt: thread.CreatedAt().Format(time.RFC3339),
+		UpdatedAt: thread.UpdatedAt().Format(time.RFC3339),
+	}
+}
 func (r *queryResolver) Nodes(ctx context.Context, ids []string) ([]model.Node, error) {
 	panic(fmt.Errorf("not implemented"))
 }

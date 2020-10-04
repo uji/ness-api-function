@@ -254,7 +254,7 @@ type Thread implements Node {
 
 input GetThreadsInput {
   limit: Int
-  lastEvaluatedTime: DateTime
+  offsetTime: DateTime
   closed: Boolean
 }
 
@@ -1888,11 +1888,11 @@ func (ec *executionContext) unmarshalInputGetThreadsInput(ctx context.Context, o
 			if err != nil {
 				return it, err
 			}
-		case "lastEvaluatedTime":
+		case "offsetTime":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("lastEvaluatedTime"))
-			it.LastEvaluatedTime, err = ec.unmarshalODateTime2ᚖstring(ctx, v)
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("offsetTime"))
+			it.OffsetTime, err = ec.unmarshalODateTime2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}

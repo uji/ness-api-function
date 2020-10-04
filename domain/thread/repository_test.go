@@ -12,12 +12,12 @@ import (
 
 func TestRepoGet(t *testing.T) {
 	cases := []struct {
-		name     string
-		items    []item
-		limit    int64
-		lastTime null.Time
-		expt     []Thread
-		err      error
+		name       string
+		items      []item
+		limit      int64
+		offsetTime null.Time
+		expt       []Thread
+		err        error
 	}{
 		{
 			name: "normal",
@@ -37,8 +37,8 @@ func TestRepoGet(t *testing.T) {
 					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
 				},
 			},
-			limit:    5,
-			lastTime: null.Time{},
+			limit:      5,
+			offsetTime: null.Time{},
 			expt: []Thread{
 				&thread{
 					id:        "Thread#1",
@@ -72,8 +72,8 @@ func TestRepoGet(t *testing.T) {
 					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
 				},
 			},
-			limit:    1,
-			lastTime: null.Time{},
+			limit:      1,
+			offsetTime: null.Time{},
 			expt: []Thread{
 				&thread{
 					id:        "Thread#1",
@@ -101,8 +101,8 @@ func TestRepoGet(t *testing.T) {
 					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
 				},
 			},
-			limit:    1,
-			lastTime: null.TimeFrom(time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC)),
+			limit:      1,
+			offsetTime: null.TimeFrom(time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC)),
 			expt: []Thread{
 				&thread{
 					id:        "Thread#0",
@@ -129,8 +129,8 @@ func TestRepoGet(t *testing.T) {
 			}
 
 			res, err := sut.get(context.Background(), repositoryGetRequest{
-				limit:             c.limit,
-				lastEvaluatedTime: c.lastTime,
+				limit:      c.limit,
+				offsetTime: c.offsetTime,
 			})
 			if err != c.err {
 				t.Fatal(err)
