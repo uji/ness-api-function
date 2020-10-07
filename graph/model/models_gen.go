@@ -19,6 +19,10 @@ type NewThread struct {
 	Title string `json:"title"`
 }
 
+type OpenThread struct {
+	ThreadID string `json:"threadID"`
+}
+
 type Thread struct {
 	ID        string `json:"id"`
 	Title     string `json:"title"`

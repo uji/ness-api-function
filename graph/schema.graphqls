@@ -30,11 +30,16 @@ input NewThread {
   title: String!
 }
 
+input OpenThread {
+  threadID: ID!
+}
+
 input CloseThread {
   threadID: ID!
 }
 
 type Mutation {
   createThread(input: NewThread!): Thread!
+  openThread(input: OpenThread!): Thread!
   closeThread(input: CloseThread!): Thread!
 }

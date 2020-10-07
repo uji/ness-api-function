@@ -24,6 +24,13 @@ func (r *mutationResolver) CreateThread(ctx context.Context, input model.NewThre
 	return cnvThread(res), nil
 }
 
+func (r *mutationResolver) OpenThread(ctx context.Context, input model.OpenThread) (*model.Thread, error) {
+	res, err := r.thread.Open(ctx, thread.OpenRequest{
+		ThreadID: input.ThreadID,
+	})
+	return cnvThread(res), err
+}
+
 func (r *mutationResolver) CloseThread(ctx context.Context, input model.CloseThread) (*model.Thread, error) {
 	res, err := r.thread.Close(ctx, thread.CloseRequest{
 		ThreadID: input.ThreadID,
