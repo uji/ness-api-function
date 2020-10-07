@@ -36,11 +36,11 @@ func (r *queryResolver) Node(ctx context.Context, id string) (model.Node, error)
 }
 
 func (r *queryResolver) Threads(ctx context.Context, input model.GetThreadsInput) ([]*model.Thread, error) {
-	l := null.IntFrom(int64(*input.Limit))
-	offset := null.StringFromPtr(input.OffsetTime)
+	ofst := null.StringFromPtr(input.OffsetTime)
+	clsd := null.BoolFromPtr(input.Closed)
 	thrds, err := r.thread.Get(ctx, thread.GetRequest{
-		Limit:      l,
-		OffsetTime: offset,
+		OffsetTime: ofst,
+		Closed:     clsd,
 	})
 	if err != nil {
 		return nil, err

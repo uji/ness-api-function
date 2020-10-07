@@ -26,8 +26,8 @@ type (
 	}
 
 	repositoryGetRequest struct {
-		limit      int64
 		offsetTime null.Time
+		closed     null.Bool
 	}
 
 	repositoryCreateRequest struct {
@@ -48,32 +48,23 @@ func NewUsecase(gen Generator, repo Repository) *Usecase {
 }
 
 type GetRequest struct {
-	Limit      null.Int
 	OffsetTime null.String
+	Closed     null.Bool
 }
 
 func (u *Usecase) Get(ctx context.Context, req GetRequest) ([]Thread, error) {
-	l := req.Limit.Int64
-	if !req.Limit.Valid {
-		l = defaultLimit
-	} else if l < 1 {
-		l = 1
-	} else if l > maxLimit {
-		l = maxLimit
-	}
-
-	var lst null.Time
+	var ofst null.Time
 	if req.OffsetTime.Valid {
 		t, err := time.Parse(time.RFC3339, req.OffsetTime.String)
 		if err != nil {
 			return nil, ErrorTimeFormatInValid
 		}
-		lst = null.TimeFrom(t)
+		ofst = null.TimeFrom(t)
 	}
 
 	return u.repo.get(ctx, repositoryGetRequest{
-		limit:      l,
-		offsetTime: lst,
+		closed:     req.Closed,
+		offsetTime: ofst,
 	})
 }
 

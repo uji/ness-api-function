@@ -23,31 +23,13 @@ func TestUsecaseGet(t *testing.T) {
 	}{
 		{
 			name:     "normal",
-			req:      GetRequest{null.IntFrom(5), null.StringFrom(offsetTimeStr)},
-			repoReq:  repositoryGetRequest{5, null.TimeFrom(offsetTime)},
-			callRepo: true,
-		},
-		{
-			name:     "limit too small",
-			req:      GetRequest{null.IntFrom(-1), null.String{}},
-			repoReq:  repositoryGetRequest{1, null.Time{}},
-			callRepo: true,
-		},
-		{
-			name:     "limit too big",
-			req:      GetRequest{null.IntFrom(101), null.String{}},
-			repoReq:  repositoryGetRequest{100, null.Time{}},
-			callRepo: true,
-		},
-		{
-			name:     "limit too big",
-			req:      GetRequest{null.Int{}, null.String{}},
-			repoReq:  repositoryGetRequest{30, null.Time{}},
+			req:      GetRequest{null.StringFrom(offsetTimeStr), null.NewBool(true, true)},
+			repoReq:  repositoryGetRequest{null.NewTime(offsetTime, true), null.NewBool(true, true)},
 			callRepo: true,
 		},
 		{
 			name:     "last evaluated time format invalid",
-			req:      GetRequest{null.IntFrom(5), null.StringFrom("test")},
+			req:      GetRequest{null.StringFrom("test"), null.Bool{}},
 			callRepo: false,
 			err:      ErrorTimeFormatInValid,
 		},

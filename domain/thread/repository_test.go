@@ -14,8 +14,8 @@ func TestRepoGet(t *testing.T) {
 	cases := []struct {
 		name       string
 		items      []item
-		limit      int64
 		offsetTime null.Time
+		closed     null.Bool
 		expt       []Thread
 		err        error
 	}{
@@ -37,7 +37,6 @@ func TestRepoGet(t *testing.T) {
 					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
 				},
 			},
-			limit:      5,
 			offsetTime: null.Time{},
 			expt: []Thread{
 				&thread{
@@ -51,35 +50,6 @@ func TestRepoGet(t *testing.T) {
 					title:     "Thread0",
 					closed:    false,
 					createdAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
-				},
-			},
-		},
-		{
-			name: "limited",
-			items: []item{
-				{
-					PK:        "Team#0",
-					SK:        "Thread#0",
-					Content:   "Thread0",
-					Closed:    "false",
-					CreatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
-				},
-				{
-					PK:        "Team#0",
-					SK:        "Thread#1",
-					Content:   "Thread1",
-					Closed:    "true",
-					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-				},
-			},
-			limit:      1,
-			offsetTime: null.Time{},
-			expt: []Thread{
-				&thread{
-					id:        "Thread#1",
-					title:     "Thread1",
-					closed:    true,
-					createdAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
 				},
 			},
 		},
@@ -101,7 +71,6 @@ func TestRepoGet(t *testing.T) {
 					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
 				},
 			},
-			limit:      1,
 			offsetTime: null.TimeFrom(time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC)),
 			expt: []Thread{
 				&thread{
@@ -109,6 +78,62 @@ func TestRepoGet(t *testing.T) {
 					title:     "Thread0",
 					closed:    false,
 					createdAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
+				},
+			},
+		},
+		{
+			name: "filtered opened",
+			items: []item{
+				{
+					PK:        "Team#0",
+					SK:        "Thread#0",
+					Content:   "Thread0",
+					Closed:    "false",
+					CreatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
+				},
+				{
+					PK:        "Team#0",
+					SK:        "Thread#1",
+					Content:   "Thread1",
+					Closed:    "true",
+					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
+				},
+			},
+			closed: null.NewBool(false, true),
+			expt: []Thread{
+				&thread{
+					id:        "Thread#0",
+					title:     "Thread0",
+					closed:    false,
+					createdAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
+				},
+			},
+		},
+		{
+			name: "filtered closed",
+			items: []item{
+				{
+					PK:        "Team#0",
+					SK:        "Thread#0",
+					Content:   "Thread0",
+					Closed:    "false",
+					CreatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
+				},
+				{
+					PK:        "Team#0",
+					SK:        "Thread#1",
+					Content:   "Thread1",
+					Closed:    "true",
+					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
+				},
+			},
+			closed: null.NewBool(true, true),
+			expt: []Thread{
+				&thread{
+					id:        "Thread#1",
+					title:     "Thread1",
+					closed:    true,
+					createdAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
 				},
 			},
 		},
@@ -129,8 +154,8 @@ func TestRepoGet(t *testing.T) {
 			}
 
 			res, err := sut.get(context.Background(), repositoryGetRequest{
-				limit:      c.limit,
 				offsetTime: c.offsetTime,
+				closed:     c.closed,
 			})
 			if err != c.err {
 				t.Fatal(err)

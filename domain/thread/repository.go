@@ -33,9 +33,16 @@ func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Threa
 	var items []item
 	teamID := "Team#0"
 
-	qr := d.tbl.Get("PK", teamID).Index("PK-CreatedAt-index").Order(false).Limit(req.limit)
+	qr := d.tbl.Get("PK", teamID).Index("PK-CreatedAt-index").Order(false)
 	if req.offsetTime.Valid {
 		qr = qr.Range("CreatedAt", dynamo.Less, req.offsetTime.Time)
+	}
+	if req.closed.Valid {
+		clsd := "false"
+		if req.closed.Bool {
+			clsd = "true"
+		}
+		qr = qr.Filter("Closed = ?", clsd)
 	}
 
 	err := qr.All(&items)

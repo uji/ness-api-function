@@ -11,7 +11,6 @@ type CloseThread struct {
 }
 
 type GetThreadsInput struct {
-	Limit      *int    `json:"limit"`
 	OffsetTime *string `json:"offsetTime"`
 	Closed     *bool   `json:"closed"`
 }

@@ -253,7 +253,6 @@ type Thread implements Node {
 }
 
 input GetThreadsInput {
-  limit: Int
   offsetTime: DateTime
   closed: Boolean
 }
@@ -1880,14 +1879,6 @@ func (ec *executionContext) unmarshalInputGetThreadsInput(ctx context.Context, o
 
 	for k, v := range asMap {
 		switch k {
-		case "limit":
-			var err error
-
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("limit"))
-			it.Limit, err = ec.unmarshalOInt2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		case "offsetTime":
 			var err error
 
@@ -2742,21 +2733,6 @@ func (ec *executionContext) marshalODateTime2ᚖstring(ctx context.Context, sel 
 		return graphql.Null
 	}
 	return graphql.MarshalString(*v)
-}
-
-func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalInt(v)
-	return &res, graphql.WrapErrorWithInputPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return graphql.MarshalInt(*v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
