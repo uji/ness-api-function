@@ -2,6 +2,7 @@ package thread
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -137,5 +138,87 @@ func TestUsecaseCreate(t *testing.T) {
 				t.Fatal(diff)
 			}
 		})
+	}
+}
+
+func TestUsecase_Open(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	repo := NewMockRepository(ctrl)
+	uc := NewUsecase(DefaultGenerator, repo)
+
+	thrd := thread{
+		id: "thread",
+	}
+	repo.EXPECT().open(context.Background(), repositoryOpenRequest{threadID: "thread"}).Return(&thrd, nil)
+	res, err := uc.Open(context.Background(), OpenRequest{
+		ThreadID: "thread",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	opts := cmp.Options{
+		cmp.AllowUnexported(thread{}),
+	}
+	if diff := cmp.Diff(&thrd, res, opts); diff != "" {
+		t.Fatal(diff)
+	}
+}
+func TestUsecase_OpenError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	repo := NewMockRepository(ctrl)
+	uc := NewUsecase(DefaultGenerator, repo)
+
+	thrd := thread{
+		id: "thread",
+	}
+	err := errors.New("test")
+	repo.EXPECT().open(context.Background(), repositoryOpenRequest{threadID: "thread"}).Return(&thrd, err)
+	if _, err := uc.Open(context.Background(), OpenRequest{
+		ThreadID: "thread",
+	}); err != err {
+		t.Fatal(err)
+	}
+}
+
+func TestUsecase_Close(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	repo := NewMockRepository(ctrl)
+	uc := NewUsecase(DefaultGenerator, repo)
+
+	thrd := thread{
+		id: "thread",
+	}
+	repo.EXPECT().close(context.Background(), repositoryCloseRequest{threadID: "thread"}).Return(&thrd, nil)
+	res, err := uc.Close(context.Background(), CloseRequest{
+		ThreadID: "thread",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	opts := cmp.Options{
+		cmp.AllowUnexported(thread{}),
+	}
+	if diff := cmp.Diff(&thrd, res, opts); diff != "" {
+		t.Fatal(diff)
+	}
+}
+func TestUsecase_CloseError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	repo := NewMockRepository(ctrl)
+	uc := NewUsecase(DefaultGenerator, repo)
+
+	thrd := thread{
+		id: "thread",
+	}
+	err := errors.New("test")
+	repo.EXPECT().close(context.Background(), repositoryCloseRequest{threadID: "thread"}).Return(&thrd, err)
+	if _, err := uc.Close(context.Background(), CloseRequest{
+		ThreadID: "thread",
+	}); err != err {
+		t.Fatal(err)
 	}
 }

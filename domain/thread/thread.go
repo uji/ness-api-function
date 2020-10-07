@@ -19,6 +19,7 @@ type (
 		Closed() bool
 		CreatedAt() time.Time
 		UpdatedAt() time.Time
+		Open()
 		Close()
 	}
 )
@@ -41,6 +42,10 @@ func (t *thread) UpdatedAt() time.Time {
 	return t.updatedAt
 }
 
+func (t *thread) Open() {
+	t.closed = false
+	t.updatedAt = time.Now()
+}
 func (t *thread) Close() {
 	t.closed = true
 	t.updatedAt = time.Now()

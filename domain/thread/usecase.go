@@ -13,18 +13,6 @@ const (
 )
 
 type (
-	Usecase struct {
-		gen  Generator
-		repo Repository
-	}
-
-	Repository interface {
-		get(context.Context, repositoryGetRequest) ([]Thread, error)
-		create(context.Context, repositoryCreateRequest) (Thread, error)
-		update(context.Context, repositoryUpdateRequest) (Thread, error)
-		close(context.Context, repositoryCloseRequest) (Thread, error)
-	}
-
 	repositoryGetRequest struct {
 		offsetTime null.Time
 		closed     null.Bool
@@ -38,8 +26,25 @@ type (
 		thread Thread
 	}
 
+	repositoryOpenRequest struct {
+		threadID string
+	}
+
 	repositoryCloseRequest struct {
 		threadID string
+	}
+
+	Repository interface {
+		get(context.Context, repositoryGetRequest) ([]Thread, error)
+		create(context.Context, repositoryCreateRequest) (Thread, error)
+		update(context.Context, repositoryUpdateRequest) (Thread, error)
+		open(context.Context, repositoryOpenRequest) (Thread, error)
+		close(context.Context, repositoryCloseRequest) (Thread, error)
+	}
+
+	Usecase struct {
+		gen  Generator
+		repo Repository
 	}
 )
 
@@ -47,10 +52,21 @@ func NewUsecase(gen Generator, repo Repository) *Usecase {
 	return &Usecase{gen, repo}
 }
 
-type GetRequest struct {
-	OffsetTime null.String
-	Closed     null.Bool
-}
+type (
+	GetRequest struct {
+		OffsetTime null.String
+		Closed     null.Bool
+	}
+	CreateRequest struct {
+		Title string
+	}
+	OpenRequest struct {
+		ThreadID string
+	}
+	CloseRequest struct {
+		ThreadID string
+	}
+)
 
 func (u *Usecase) Get(ctx context.Context, req GetRequest) ([]Thread, error) {
 	var ofst null.Time
@@ -68,12 +84,6 @@ func (u *Usecase) Get(ctx context.Context, req GetRequest) ([]Thread, error) {
 	})
 }
 
-type (
-	CreateRequest struct {
-		Title string
-	}
-)
-
 func (u *Usecase) Create(ctx context.Context, req CreateRequest) (Thread, error) {
 	if req.Title == "" {
 		return nil, ErrorTitleIsRequired
@@ -89,8 +99,11 @@ func (u *Usecase) Create(ctx context.Context, req CreateRequest) (Thread, error)
 	})
 }
 
-type CloseRequest struct {
-	ThreadID string
+func (u *Usecase) Open(ctx context.Context, req OpenRequest) (Thread, error) {
+	res, err := u.repo.open(ctx, repositoryOpenRequest{
+		threadID: req.ThreadID,
+	})
+	return res, err
 }
 
 func (u *Usecase) Close(ctx context.Context, req CloseRequest) (Thread, error) {

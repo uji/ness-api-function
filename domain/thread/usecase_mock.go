@@ -78,6 +78,21 @@ func (mr *MockRepositoryMockRecorder) update(arg0, arg1 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "update", reflect.TypeOf((*MockRepository)(nil).update), arg0, arg1)
 }
 
+// open mocks base method
+func (m *MockRepository) open(arg0 context.Context, arg1 repositoryOpenRequest) (Thread, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "open", arg0, arg1)
+	ret0, _ := ret[0].(Thread)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// open indicates an expected call of open
+func (mr *MockRepositoryMockRecorder) open(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "open", reflect.TypeOf((*MockRepository)(nil).open), arg0, arg1)
+}
+
 // close mocks base method
 func (m *MockRepository) close(arg0 context.Context, arg1 repositoryCloseRequest) (Thread, error) {
 	m.ctrl.T.Helper()

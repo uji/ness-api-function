@@ -84,6 +84,18 @@ func (d *repository) update(ctx context.Context, req repositoryUpdateRequest) (T
 	return req.thread, nil
 }
 
+func (d *repository) open(ctx context.Context, req repositoryOpenRequest) (Thread, error) {
+	var itm item
+	if err := d.tbl.Get("PK", "Team#0").Range("SK", dynamo.Equal, req.threadID).One(&itm); err != nil {
+		return nil, err
+	}
+
+	th := itm.toThread()
+	th.Open()
+
+	return d.update(ctx, repositoryUpdateRequest{th})
+}
+
 func (d *repository) close(ctx context.Context, req repositoryCloseRequest) (Thread, error) {
 	var itm item
 	if err := d.tbl.Get("PK", "Team#0").Range("SK", dynamo.Equal, req.threadID).One(&itm); err != nil {
