@@ -1,4 +1,4 @@
-module example.com/ness-api-function
+module github.com/uji/ness-api-function
 
 go 1.15
 

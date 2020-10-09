@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"time"
 
-	"example.com/ness-api-function/domain/thread"
-	"example.com/ness-api-function/graph/generated"
-	"example.com/ness-api-function/graph/model"
 	"github.com/guregu/null"
+	"github.com/uji/ness-api-function/domain/thread"
+	"github.com/uji/ness-api-function/graph/generated"
+	"github.com/uji/ness-api-function/graph/model"
 )
 
 func (r *mutationResolver) CreateThread(ctx context.Context, input model.NewThread) (*model.Thread, error) {

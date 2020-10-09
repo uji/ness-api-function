@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"example.com/ness-api-function/infra/db"
 	"github.com/google/go-cmp/cmp"
 	"github.com/guregu/null"
+	"github.com/uji/ness-api-function/infra/db"
 )
 
 func TestRepoGet(t *testing.T) {

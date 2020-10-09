@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"example.com/ness-api-function/infra/db"
+	"github.com/uji/ness-api-function/infra/db"
 )
 
 func usage() {

@@ -1,6 +1,6 @@
 package graph
 
-import "example.com/ness-api-function/domain/thread"
+import "github.com/uji/ness-api-function/domain/thread"
 
 // This file will not be regenerated automatically.
 //

@@ -1,12 +1,12 @@
 package registory
 
 import (
-	"example.com/ness-api-function/domain/thread"
-	"example.com/ness-api-function/graph"
-	"example.com/ness-api-function/graph/generated"
-	"example.com/ness-api-function/infra/db"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/guregu/dynamo"
+	"github.com/uji/ness-api-function/domain/thread"
+	"github.com/uji/ness-api-function/graph"
+	"github.com/uji/ness-api-function/graph/generated"
+	"github.com/uji/ness-api-function/infra/db"
 )
 
 func newThreadUsecase(dnmdb *dynamo.DB) *thread.Usecase {

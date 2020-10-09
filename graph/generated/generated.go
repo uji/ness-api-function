@@ -11,9 +11,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"example.com/ness-api-function/graph/model"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
+	"github.com/uji/ness-api-function/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
