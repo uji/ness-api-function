@@ -1,15 +1,15 @@
 SHELL=bash
 
-IN_DOCKER := $(shell\
+HAS_DOCKER := $(shell\
 	if type "docker" > /dev/null 2>&1; then\
-			echo false;\
-		else\
 			echo true;\
+		else\
+			echo false;\
 	fi\
 )
 
-# commands for host machine shell
-ifeq ($(IN_DOCKER),false)
+# commands for host with docker command
+ifeq ($(HAS_DOCKER),true)
 network:
 	docker network create ness-network
 
@@ -47,8 +47,8 @@ destroy-table:
 	docker-compose exec api go run ./tools/dbtool/ destroy
 endif
 
-# commands for container shell
-ifeq ($(IN_DOCKER),true)
+# commands for container shell or host without docker command
+ifeq ($(HAS_DOCKER),false)
 serve:
 	go run ./testsrv
 
