@@ -6,13 +6,14 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"sync"
 	"sync/atomic"
 
-	"example.com/ness-api-function/graph/model"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
+	"github.com/uji/ness-api-function/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -44,25 +45,33 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Mutation struct {
+		CloseThread  func(childComplexity int, input model.CloseThread) int
 		CreateThread func(childComplexity int, input model.NewThread) int
+		OpenThread   func(childComplexity int, input model.OpenThread) int
 	}
 
 	Query struct {
-		Threads func(childComplexity int) int
+		Node    func(childComplexity int, id string) int
+		Threads func(childComplexity int, input model.GetThreadsInput) int
 	}
 
 	Thread struct {
-		Closed func(childComplexity int) int
-		ID     func(childComplexity int) int
-		Title  func(childComplexity int) int
+		Closed    func(childComplexity int) int
+		CreatedAt func(childComplexity int) int
+		ID        func(childComplexity int) int
+		Title     func(childComplexity int) int
+		UpdatedAt func(childComplexity int) int
 	}
 }
 
 type MutationResolver interface {
 	CreateThread(ctx context.Context, input model.NewThread) (*model.Thread, error)
+	OpenThread(ctx context.Context, input model.OpenThread) (*model.Thread, error)
+	CloseThread(ctx context.Context, input model.CloseThread) (*model.Thread, error)
 }
 type QueryResolver interface {
-	Threads(ctx context.Context) ([]*model.Thread, error)
+	Node(ctx context.Context, id string) (model.Node, error)
+	Threads(ctx context.Context, input model.GetThreadsInput) ([]*model.Thread, error)
 }
 
 type executableSchema struct {
@@ -80,6 +89,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
+	case "Mutation.closeThread":
+		if e.complexity.Mutation.CloseThread == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_closeThread_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CloseThread(childComplexity, args["input"].(model.CloseThread)), true
+
 	case "Mutation.createThread":
 		if e.complexity.Mutation.CreateThread == nil {
 			break
@@ -92,12 +113,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateThread(childComplexity, args["input"].(model.NewThread)), true
 
+	case "Mutation.openThread":
+		if e.complexity.Mutation.OpenThread == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_openThread_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.OpenThread(childComplexity, args["input"].(model.OpenThread)), true
+
+	case "Query.node":
+		if e.complexity.Query.Node == nil {
+			break
+		}
+
+		args, err := ec.field_Query_node_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Node(childComplexity, args["id"].(string)), true
+
 	case "Query.threads":
 		if e.complexity.Query.Threads == nil {
 			break
 		}
 
-		return e.complexity.Query.Threads(childComplexity), true
+		args, err := ec.field_Query_threads_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Threads(childComplexity, args["input"].(model.GetThreadsInput)), true
 
 	case "Thread.closed":
 		if e.complexity.Thread.Closed == nil {
@@ -105,6 +155,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Thread.Closed(childComplexity), true
+
+	case "Thread.createdAt":
+		if e.complexity.Thread.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Thread.CreatedAt(childComplexity), true
 
 	case "Thread.id":
 		if e.complexity.Thread.ID == nil {
@@ -119,6 +176,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Thread.Title(childComplexity), true
+
+	case "Thread.updatedAt":
+		if e.complexity.Thread.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.Thread.UpdatedAt(childComplexity), true
 
 	}
 	return 0, false
@@ -188,22 +252,46 @@ var sources = []*ast.Source{
 #
 # https://gqlgen.com/getting-started/
 
-type Thread {
-  id: String!
+scalar DateTime
+
+interface Node {
+  id: ID!
+}
+
+type Thread implements Node {
+  id: ID!
   title: String!
   closed: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+input GetThreadsInput {
+  offsetTime: DateTime
+  closed: Boolean
 }
 
 type Query {
-  threads: [Thread!]!
+  node(id: ID!): Node!
+  threads(input: GetThreadsInput!): [Thread!]!
 }
 
 input NewThread {
   title: String!
 }
 
+input OpenThread {
+  threadID: ID!
+}
+
+input CloseThread {
+  threadID: ID!
+}
+
 type Mutation {
   createThread(input: NewThread!): Thread!
+  openThread(input: OpenThread!): Thread!
+  closeThread(input: CloseThread!): Thread!
 }
 `, BuiltIn: false},
 }
@@ -213,6 +301,21 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
+func (ec *executionContext) field_Mutation_closeThread_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.CloseThread
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		arg0, err = ec.unmarshalNCloseThread2exampleᚗcomᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐCloseThread(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_createThread_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -220,6 +323,21 @@ func (ec *executionContext) field_Mutation_createThread_args(ctx context.Context
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
 		arg0, err = ec.unmarshalNNewThread2exampleᚗcomᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐNewThread(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_openThread_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.OpenThread
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		arg0, err = ec.unmarshalNOpenThread2exampleᚗcomᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐOpenThread(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -240,6 +358,36 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_node_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_threads_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.GetThreadsInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		arg0, err = ec.unmarshalNGetThreadsInput2exampleᚗcomᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐGetThreadsInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -322,6 +470,129 @@ func (ec *executionContext) _Mutation_createThread(ctx context.Context, field gr
 	return ec.marshalNThread2ᚖexampleᚗcomᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐThread(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_openThread(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_openThread_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().OpenThread(rctx, args["input"].(model.OpenThread))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Thread)
+	fc.Result = res
+	return ec.marshalNThread2ᚖexampleᚗcomᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐThread(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_closeThread(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_closeThread_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CloseThread(rctx, args["input"].(model.CloseThread))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Thread)
+	fc.Result = res
+	return ec.marshalNThread2ᚖexampleᚗcomᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐThread(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_node(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_node_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Node(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.Node)
+	fc.Result = res
+	return ec.marshalNNode2exampleᚗcomᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐNode(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_threads(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -337,9 +608,16 @@ func (ec *executionContext) _Query_threads(ctx context.Context, field graphql.Co
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_threads_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Threads(rctx)
+		return ec.resolvers.Query().Threads(rctx, args["input"].(model.GetThreadsInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -456,7 +734,7 @@ func (ec *executionContext) _Thread_id(ctx context.Context, field graphql.Collec
 	}
 	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Thread_title(ctx context.Context, field graphql.CollectedField, obj *model.Thread) (ret graphql.Marshaler) {
@@ -525,6 +803,74 @@ func (ec *executionContext) _Thread_closed(ctx context.Context, field graphql.Co
 	res := resTmp.(bool)
 	fc.Result = res
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Thread_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.Thread) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Thread",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNDateTime2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Thread_updatedAt(ctx context.Context, field graphql.CollectedField, obj *model.Thread) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Thread",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNDateTime2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -1582,6 +1928,54 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputCloseThread(ctx context.Context, obj interface{}) (model.CloseThread, error) {
+	var it model.CloseThread
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "threadID":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("threadID"))
+			it.ThreadID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputGetThreadsInput(ctx context.Context, obj interface{}) (model.GetThreadsInput, error) {
+	var it model.GetThreadsInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "offsetTime":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("offsetTime"))
+			it.OffsetTime, err = ec.unmarshalODateTime2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "closed":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("closed"))
+			it.Closed, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputNewThread(ctx context.Context, obj interface{}) (model.NewThread, error) {
 	var it model.NewThread
 	var asMap = obj.(map[string]interface{})
@@ -1602,9 +1996,45 @@ func (ec *executionContext) unmarshalInputNewThread(ctx context.Context, obj int
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputOpenThread(ctx context.Context, obj interface{}) (model.OpenThread, error) {
+	var it model.OpenThread
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "threadID":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("threadID"))
+			it.ThreadID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
+
+func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj model.Node) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.Thread:
+		return ec._Thread(ctx, sel, &obj)
+	case *model.Thread:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Thread(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
 
 // endregion ************************** interface.gotpl ***************************
 
@@ -1627,6 +2057,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = graphql.MarshalString("Mutation")
 		case "createThread":
 			out.Values[i] = ec._Mutation_createThread(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "openThread":
+			out.Values[i] = ec._Mutation_openThread(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "closeThread":
+			out.Values[i] = ec._Mutation_closeThread(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -1656,6 +2096,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
+		case "node":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_node(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "threads":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -1685,7 +2139,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	return out
 }
 
-var threadImplementors = []string{"Thread"}
+var threadImplementors = []string{"Thread", "Node"}
 
 func (ec *executionContext) _Thread(ctx context.Context, sel ast.SelectionSet, obj *model.Thread) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, threadImplementors)
@@ -1708,6 +2162,16 @@ func (ec *executionContext) _Thread(ctx context.Context, sel ast.SelectionSet, o
 			}
 		case "closed":
 			out.Values[i] = ec._Thread_closed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._Thread_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updatedAt":
+			out.Values[i] = ec._Thread_updatedAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -1982,8 +2446,63 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNCloseThread2exampleᚗcomᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐCloseThread(ctx context.Context, v interface{}) (model.CloseThread, error) {
+	res, err := ec.unmarshalInputCloseThread(ctx, v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNDateTime2string(ctx context.Context, v interface{}) (string, error) {
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDateTime2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNGetThreadsInput2exampleᚗcomᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐGetThreadsInput(ctx context.Context, v interface{}) (model.GetThreadsInput, error) {
+	res, err := ec.unmarshalInputGetThreadsInput(ctx, v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
+	res, err := graphql.UnmarshalID(v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	res := graphql.MarshalID(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNNewThread2exampleᚗcomᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐNewThread(ctx context.Context, v interface{}) (model.NewThread, error) {
 	res, err := ec.unmarshalInputNewThread(ctx, v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNNode2exampleᚗcomᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐNode(ctx context.Context, sel ast.SelectionSet, v model.Node) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Node(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNOpenThread2exampleᚗcomᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐOpenThread(ctx context.Context, v interface{}) (model.OpenThread, error) {
+	res, err := ec.unmarshalInputOpenThread(ctx, v)
 	return res, graphql.WrapErrorWithInputPath(ctx, err)
 }
 
@@ -2304,6 +2823,21 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	return graphql.MarshalBoolean(*v)
+}
+
+func (ec *executionContext) unmarshalODateTime2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalString(v)
+	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalODateTime2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalString(*v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

@@ -1,28 +1,44 @@
-package dbtool
+package main
 
 import (
-	"testing"
+	"flag"
+	"fmt"
+	"os"
 
-	"github.com/guregu/dynamo"
+	"github.com/uji/ness-api-function/infra/db"
 )
 
-type threadTable struct {
-	PK string `dynamo:",hash"`
-	SK string `dynamo:",range"`
+func usage() {
+	fmt.Fprintf(os.Stderr, "Usage of dbtool\n")
+	fmt.Fprintf(os.Stderr, "\tdbtool create # create tables & indexes\n")
+	fmt.Fprintf(os.Stderr, "\tdbtool destroy # destroy tables & indexes\n")
 }
 
-func CreateThreadTable(db *dynamo.DB, name string) (dynamo.Table, error) {
-	ctbl := db.CreateTable(name, threadTable{})
-	if err := ctbl.Run(); err != nil {
-		return dynamo.Table{}, err
-	}
-	return db.Table(name), nil
-}
+func main() {
+	flag.Usage = usage
+	flag.Parse()
 
-func CreateThreadTestTable(db *dynamo.DB, t *testing.T) dynamo.Table {
-	tbl, err := CreateThreadTable(db, "Thread-"+t.Name())
-	if err != nil {
-		t.Fatal("create Thread table")
+	if flag.NArg() < 1 {
+		fmt.Fprintf(os.Stderr, "command arg required\n")
+		usage()
+		os.Exit(2)
 	}
-	return tbl
+
+	arg := flag.Arg(0)
+	switch arg {
+	case "create":
+		dnmdb := db.NewDynamoDB()
+		if _, err := db.CreateThreadTable(dnmdb, db.ThreadTableName); err != nil {
+			fmt.Fprintf(os.Stderr, err.Error()+"\n")
+		}
+	case "destroy":
+		dnmdb := db.NewDynamoDB()
+		if err := db.DestroyTreadTable(dnmdb, db.ThreadTableName); err != nil {
+			fmt.Fprintf(os.Stderr, err.Error()+"\n")
+		}
+	default:
+		fmt.Fprintf(os.Stderr, "%s not found\n", arg)
+		usage()
+		os.Exit(2)
+	}
 }

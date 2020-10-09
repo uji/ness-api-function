@@ -2,24 +2,38 @@ package thread
 
 import (
 	"context"
+	"errors"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
+	"github.com/guregu/null"
 )
 
 func TestUsecaseGet(t *testing.T) {
+	offsetTime := time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC)
+	offsetTimeStr := offsetTime.Format(time.RFC3339)
+
 	cases := []struct {
-		name      string
-		reqLimit  int
-		reqOffset int
-		limit     int
-		offset    int
+		name     string
+		req      GetRequest
+		repoReq  repositoryGetRequest
+		callRepo bool
+		err      error
 	}{
-		{"normal", 5, 5, 5, 5},
-		{"limit too small", -1, 5, 1, 5},
-		{"limit too big", 101, 5, 100, 5},
-		{"offset too small", 5, -1, 5, 0},
+		{
+			name:     "normal",
+			req:      GetRequest{null.StringFrom(offsetTimeStr), null.NewBool(true, true)},
+			repoReq:  repositoryGetRequest{null.NewTime(offsetTime, true), null.NewBool(true, true)},
+			callRepo: true,
+		},
+		{
+			name:     "last evaluated time format invalid",
+			req:      GetRequest{null.StringFrom("test"), null.Bool{}},
+			callRepo: false,
+			err:      ErrorTimeFormatInValid,
+		},
 	}
 
 	for _, c := range cases {
@@ -27,39 +41,40 @@ func TestUsecaseGet(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			gen := NewGeneratorConfigured()
+			gen := DefaultGenerator
 			repo := NewMockRepository(ctrl)
-			threads := []*Thread{
-				{
+			threads := []Thread{
+				&thread{
 					id:     "thread1",
 					title:  "thread1",
 					closed: false,
 				},
-				{
+				&thread{
 					id:     "thread2",
 					title:  "thread2",
 					closed: true,
 				},
 			}
-			repo.EXPECT().get(
-				context.Background(),
-				repositoryGetRequest{
-					limit:  c.limit,
-					offset: c.offset,
-				},
-			).Return(threads, nil)
+
+			if c.callRepo {
+				repo.EXPECT().get(
+					context.Background(),
+					c.repoReq,
+				).Return(threads, nil)
+			}
 
 			uc := NewUsecase(gen, repo)
-			res, err := uc.Get(context.Background(), GetRequest{
-				Limit:  c.reqLimit,
-				Offset: c.reqOffset,
-			})
-			if err != nil {
+
+			res, err := uc.Get(context.Background(), c.req)
+			if err != c.err {
 				t.Fatal(err)
+			}
+			if c.err != nil {
+				return
 			}
 
 			opts := cmp.Options{
-				cmp.AllowUnexported(Thread{}),
+				cmp.AllowUnexported(thread{}),
 			}
 			if diff := cmp.Diff(threads, res, opts); diff != "" {
 				t.Fatal(res)
@@ -77,7 +92,7 @@ func TestUsecaseCreate(t *testing.T) {
 		useRepository bool
 	}{
 		{"normal", "thread1", nil, true, true},
-		{"blank title", "", ErrorCreate01, false, false},
+		{"blank title", "", ErrorTitleIsRequired, false, false},
 	}
 
 	for _, c := range cases {
@@ -85,15 +100,15 @@ func TestUsecaseCreate(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			thrd := Thread{
+			thrd := thread{
 				id:     "thread1",
 				title:  c.title,
 				closed: false,
 			}
 
-			gen := NewGenerator(func(title string) (*Thread, error) {
+			gen := func(attr ThreadAttribute) (Thread, error) {
 				return &thrd, nil
-			})
+			}
 
 			repo := NewMockRepository(ctrl)
 			if c.useRepository {
@@ -117,11 +132,93 @@ func TestUsecaseCreate(t *testing.T) {
 			}
 
 			opts := cmp.Options{
-				cmp.AllowUnexported(Thread{}),
+				cmp.AllowUnexported(thread{}),
 			}
 			if diff := cmp.Diff(&thrd, res, opts); diff != "" {
 				t.Fatal(diff)
 			}
 		})
+	}
+}
+
+func TestUsecase_Open(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	repo := NewMockRepository(ctrl)
+	uc := NewUsecase(DefaultGenerator, repo)
+
+	thrd := thread{
+		id: "thread",
+	}
+	repo.EXPECT().open(context.Background(), repositoryOpenRequest{threadID: "thread"}).Return(&thrd, nil)
+	res, err := uc.Open(context.Background(), OpenRequest{
+		ThreadID: "thread",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	opts := cmp.Options{
+		cmp.AllowUnexported(thread{}),
+	}
+	if diff := cmp.Diff(&thrd, res, opts); diff != "" {
+		t.Fatal(diff)
+	}
+}
+func TestUsecase_OpenError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	repo := NewMockRepository(ctrl)
+	uc := NewUsecase(DefaultGenerator, repo)
+
+	thrd := thread{
+		id: "thread",
+	}
+	terr := errors.New("test")
+	repo.EXPECT().open(context.Background(), repositoryOpenRequest{threadID: "thread"}).Return(&thrd, terr)
+	if _, err := uc.Open(context.Background(), OpenRequest{
+		ThreadID: "thread",
+	}); err != terr {
+		t.Fatal(err)
+	}
+}
+
+func TestUsecase_Close(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	repo := NewMockRepository(ctrl)
+	uc := NewUsecase(DefaultGenerator, repo)
+
+	thrd := thread{
+		id: "thread",
+	}
+	repo.EXPECT().close(context.Background(), repositoryCloseRequest{threadID: "thread"}).Return(&thrd, nil)
+	res, err := uc.Close(context.Background(), CloseRequest{
+		ThreadID: "thread",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	opts := cmp.Options{
+		cmp.AllowUnexported(thread{}),
+	}
+	if diff := cmp.Diff(&thrd, res, opts); diff != "" {
+		t.Fatal(diff)
+	}
+}
+func TestUsecase_CloseError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	repo := NewMockRepository(ctrl)
+	uc := NewUsecase(DefaultGenerator, repo)
+
+	thrd := thread{
+		id: "thread",
+	}
+	terr := errors.New("test")
+	repo.EXPECT().close(context.Background(), repositoryCloseRequest{threadID: "thread"}).Return(&thrd, terr)
+	if _, err := uc.Close(context.Background(), CloseRequest{
+		ThreadID: "thread",
+	}); err != terr {
+		t.Fatal(err)
 	}
 }

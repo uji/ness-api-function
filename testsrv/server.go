@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"os"
 
-	"example.com/ness-api-function/registory"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/rs/cors"
+	"github.com/uji/ness-api-function/registory"
 )
 
 const defaultPort = "3000"

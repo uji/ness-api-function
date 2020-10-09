@@ -2,12 +2,33 @@
 
 package model
 
+type Node interface {
+	IsNode()
+}
+
+type CloseThread struct {
+	ThreadID string `json:"threadID"`
+}
+
+type GetThreadsInput struct {
+	OffsetTime *string `json:"offsetTime"`
+	Closed     *bool   `json:"closed"`
+}
+
 type NewThread struct {
 	Title string `json:"title"`
 }
 
-type Thread struct {
-	ID     string `json:"id"`
-	Title  string `json:"title"`
-	Closed bool   `json:"closed"`
+type OpenThread struct {
+	ThreadID string `json:"threadID"`
 }
+
+type Thread struct {
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	Closed    bool   `json:"closed"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
+}
+
+func (Thread) IsNode() {}

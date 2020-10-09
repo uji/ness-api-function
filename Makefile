@@ -1,3 +1,15 @@
+SHELL=bash
+
+IN_DOCKER := $(shell\
+	if type "docker" > /dev/null 2>&1; then\
+			echo false;\
+		else\
+			echo true;\
+	fi\
+)
+
+# commands for host machine shell
+ifeq ($(IN_DOCKER),false)
 network:
 	docker network create ness-network
 
@@ -28,17 +40,24 @@ stop:
 serve:
 	docker-compose exec api go run ./testsrv
 
+table:
+	docker-compose exec api go run ./tools/dbtool/ create
+
+destroy-table:
+	docker-compose exec api go run ./tools/dbtool/ destroy
+endif
+
+# commands for container shell
+ifeq ($(IN_DOCKER),true)
+serve:
+	go run ./testsrv
+
 mock:
 	mockgen -source ./domain/thread/usecase.go -destination ./domain/thread/usecase_mock.go -package thread
 
 table:
-	docker-compose exec aws-cli \
-	aws dynamodb create-table \
-	--region us-east-1 \
-	--endpoint http://db-with-gui:8000 \
-	--table-name Thread \
-	--attribute-definitions \
-		AttributeName=PK,AttributeType=S \
-		AttributeName=SK,AttributeType=S \
-	--key-schema AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE \
-	--provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
+	go run ./tools/dbtool/ create
+
+destroy-table:
+	go run ./tools/dbtool/ destroy
+endif
