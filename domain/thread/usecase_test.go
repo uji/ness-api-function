@@ -173,11 +173,11 @@ func TestUsecase_OpenError(t *testing.T) {
 	thrd := thread{
 		id: "thread",
 	}
-	err := errors.New("test")
-	repo.EXPECT().open(context.Background(), repositoryOpenRequest{threadID: "thread"}).Return(&thrd, err)
+	terr := errors.New("test")
+	repo.EXPECT().open(context.Background(), repositoryOpenRequest{threadID: "thread"}).Return(&thrd, terr)
 	if _, err := uc.Open(context.Background(), OpenRequest{
 		ThreadID: "thread",
-	}); err != err {
+	}); err != terr {
 		t.Fatal(err)
 	}
 }
@@ -214,11 +214,11 @@ func TestUsecase_CloseError(t *testing.T) {
 	thrd := thread{
 		id: "thread",
 	}
-	err := errors.New("test")
-	repo.EXPECT().close(context.Background(), repositoryCloseRequest{threadID: "thread"}).Return(&thrd, err)
+	terr := errors.New("test")
+	repo.EXPECT().close(context.Background(), repositoryCloseRequest{threadID: "thread"}).Return(&thrd, terr)
 	if _, err := uc.Close(context.Background(), CloseRequest{
 		ThreadID: "thread",
-	}); err != err {
+	}); err != terr {
 		t.Fatal(err)
 	}
 }

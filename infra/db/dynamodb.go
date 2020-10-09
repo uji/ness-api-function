@@ -17,7 +17,11 @@ var (
 
 func NewDynamoDB() *dynamo.DB {
 	ep := os.Getenv("DB_ENDPOINT")
-	return dynamo.New(session.New(),
+	ssn, err := session.NewSession()
+	if err != nil {
+		panic(err)
+	}
+	return dynamo.New(ssn,
 		&aws.Config{
 			Endpoint: &ep,
 		},
@@ -46,6 +50,12 @@ func CreateThreadTestTable(db *dynamo.DB, t *testing.T) dynamo.Table {
 		t.Fatal("create Thread table", err)
 	}
 	return tbl
+}
+
+func DestroyTestTable(tbl *dynamo.Table, t *testing.T) {
+	if err := tbl.DeleteTable().Run(); err != nil {
+		t.Fatal("create Thread table", err)
+	}
 }
 
 func DestroyTreadTable(db *dynamo.DB, name string) error {

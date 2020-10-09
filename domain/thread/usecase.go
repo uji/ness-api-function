@@ -7,11 +7,6 @@ import (
 	"github.com/guregu/null"
 )
 
-const (
-	defaultLimit = 30
-	maxLimit     = 100
-)
-
 type (
 	repositoryGetRequest struct {
 		offsetTime null.Time
@@ -88,9 +83,7 @@ func (u *Usecase) Create(ctx context.Context, req CreateRequest) (Thread, error)
 	if req.Title == "" {
 		return nil, ErrorTitleIsRequired
 	}
-	th, err := u.gen(ThreadAttribute{
-		Title: req.Title,
-	})
+	th, err := u.gen(ThreadAttribute(req))
 	if err != nil {
 		return nil, err
 	}

@@ -14,3 +14,4 @@ ENV DB_ENDPOINT http://db-with-gui:8000
 
 RUN go get github.com/golang/mock/mockgen@v1.4.4
 RUN go get github.com/99designs/gqlgen
+RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /go/bin v1.31.0

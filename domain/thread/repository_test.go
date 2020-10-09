@@ -143,7 +143,7 @@ func TestRepoGet(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			dnmdb := db.NewDynamoDB()
 			tbl := db.CreateThreadTestTable(dnmdb, t)
-			defer tbl.DeleteTable().Run()
+			defer db.DestroyTestTable(&tbl, t)
 
 			sut := NewDynamoRepository(dnmdb, tbl.Name())
 
@@ -172,7 +172,7 @@ func TestRepoGet(t *testing.T) {
 func TestRepoCreate(t *testing.T) {
 	dnmdb := db.NewDynamoDB()
 	tbl := db.CreateThreadTestTable(dnmdb, t)
-	defer tbl.DeleteTable().Run()
+	defer db.DestroyTestTable(&tbl, t)
 
 	sut := NewDynamoRepository(dnmdb, tbl.Name())
 
@@ -205,12 +205,14 @@ func testRepo_update(
 ) {
 	dnmdb := db.NewDynamoDB()
 	tbl := db.CreateThreadTestTable(dnmdb, t)
-	defer tbl.DeleteTable().Run()
+	defer db.DestroyTestTable(&tbl, t)
 
 	sut := NewDynamoRepository(dnmdb, tbl.Name())
 
 	for _, itm := range items {
-		tbl.Put(itm).Run()
+		if err := tbl.Put(itm).Run(); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	res, err := sut.update(
