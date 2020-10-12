@@ -1,4 +1,4 @@
-package auth
+package nessauth
 
 type (
 	UserID string
