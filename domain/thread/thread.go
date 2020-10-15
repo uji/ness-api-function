@@ -5,8 +5,13 @@ import (
 )
 
 type (
+	UserID string
+	TeamID string
+
 	thread struct {
 		id        string
+		teamID    TeamID
+		createrID UserID
 		title     string
 		closed    bool
 		createdAt time.Time
@@ -15,6 +20,8 @@ type (
 
 	Thread interface {
 		ID() string
+		TeamID() TeamID
+		CreatorID() UserID
 		Title() string
 		Closed() bool
 		CreatedAt() time.Time
@@ -28,6 +35,12 @@ var _ Thread = &thread{}
 
 func (t *thread) ID() string {
 	return t.id
+}
+func (t *thread) TeamID() TeamID {
+	return t.teamID
+}
+func (t *thread) CreatorID() UserID {
+	return t.createrID
 }
 func (t *thread) Title() string {
 	return t.title

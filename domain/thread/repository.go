@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/guregu/dynamo"
+	"github.com/uji/ness-api-function/domain/nessauth"
 )
 
 type repository struct {
@@ -31,7 +32,10 @@ func NewDynamoRepository(
 
 func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Thread, error) {
 	var items []item
-	teamID := "Team#0"
+	teamID, err := nessauth.GetTeamIDToContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	qr := d.tbl.Get("PK", teamID).Index("PK-CreatedAt-index").Order(false)
 	if req.offsetTime.Valid {
@@ -45,8 +49,7 @@ func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Threa
 		qr = qr.Filter("Closed = ?", clsd)
 	}
 
-	err := qr.All(&items)
-	if err != nil {
+	if err := qr.All(&items); err != nil {
 		return nil, repositoryError(err)
 	}
 
@@ -111,6 +114,7 @@ func (d *repository) close(ctx context.Context, req repositoryCloseRequest) (Thr
 type item struct {
 	PK        string    // Hash key
 	SK        string    // Range key
+	CreatorID string    `dynamo:"CreatorID"`
 	Content   string    `dynamo:"Content"`
 	Closed    string    `dynamo:"Closed"`
 	CreatedAt time.Time `dynamo:"CreatedAt"`
@@ -124,8 +128,9 @@ func newItem(thread Thread) *item {
 	}
 
 	return &item{
-		PK:        "Team#0",
+		PK:        string(thread.TeamID()),
 		SK:        thread.ID(),
+		CreatorID: string(thread.CreatorID()),
 		Content:   thread.Title(),
 		Closed:    clsd,
 		CreatedAt: thread.CreatedAt(),
@@ -141,6 +146,8 @@ func (i *item) toThread() Thread {
 
 	return &thread{
 		id:        i.SK,
+		teamID:    TeamID(i.PK),
+		createrID: UserID(i.CreatorID),
 		title:     i.Content,
 		closed:    clsd,
 		createdAt: i.CreatedAt,

@@ -106,7 +106,7 @@ func TestUsecaseCreate(t *testing.T) {
 				closed: false,
 			}
 
-			gen := func(attr ThreadAttribute) (Thread, error) {
+			gen := func(attr threadAttribute) (Thread, error) {
 				return &thrd, nil
 			}
 

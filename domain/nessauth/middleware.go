@@ -22,8 +22,8 @@ func Middleware(next http.Handler) http.Handler {
 		}
 		user := getUser(uid)
 
-		ctx := SetUserIDToContext(r.Context(), user.UserID())
-		ctx = SetTeamIDToContext(ctx, user.TeamID())
+		ctx := SetUserIDToContext(r.Context(), string(user.UserID()))
+		ctx = SetTeamIDToContext(ctx, string(user.TeamID()))
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)

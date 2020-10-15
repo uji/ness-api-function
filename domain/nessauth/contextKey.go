@@ -16,9 +16,9 @@ const (
 
 func SetUserIDToContext(
 	ctx context.Context,
-	userID UserID,
+	userID string,
 ) context.Context {
-	return context.WithValue(ctx, contextKeyUserID, userID)
+	return context.WithValue(ctx, contextKeyUserID, UserID(userID))
 }
 
 func GetUserIDToContext(
@@ -33,9 +33,9 @@ func GetUserIDToContext(
 
 func SetTeamIDToContext(
 	ctx context.Context,
-	teamID TeamID,
+	teamID string,
 ) context.Context {
-	return context.WithValue(ctx, contextKeyTeamID, teamID)
+	return context.WithValue(ctx, contextKeyTeamID, TeamID(teamID))
 }
 
 func GetTeamIDToContext(
