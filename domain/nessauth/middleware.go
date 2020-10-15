@@ -30,6 +30,16 @@ func Middleware(next http.Handler) http.Handler {
 	})
 }
 
+func DammyMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := SetUserIDToContext(r.Context(), "User#0")
+		ctx = SetTeamIDToContext(ctx, "Team#0")
+		r = r.WithContext(ctx)
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func verifyCookie(ctx context.Context, ck *http.Cookie) (UserID, error) {
 	app, err := firebase.NewApp(ctx, nil)
 	if err != nil {
