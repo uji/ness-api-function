@@ -40,6 +40,9 @@ stop:
 serve:
 	docker-compose exec api go run ./testsrv
 
+serve-with-auth:
+	docker-compose exec api go run ./testsrv -teamID $(TEAM_ID) -userID $(USER_ID)
+
 table:
 	docker-compose exec api go run ./tools/dbtool/ create
 
@@ -51,6 +54,9 @@ endif
 ifeq ($(HAS_DOCKER),false)
 serve:
 	go run ./testsrv
+
+serve-with-auth:
+	go run ./testsrv -teamID $(TEAM_ID) -userID $(USER_ID)
 
 mock:
 	mockgen -source ./domain/thread/usecase.go -destination ./domain/thread/usecase_mock.go -package thread

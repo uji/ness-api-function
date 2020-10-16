@@ -2,7 +2,6 @@ package thread
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/guregu/null"
@@ -108,7 +107,6 @@ func (u *Usecase) Create(ctx context.Context, req CreateRequest) (Thread, error)
 }
 
 func (u *Usecase) Open(ctx context.Context, req OpenRequest) (Thread, error) {
-	fmt.Println(ctx)
 	tid, err := nessauth.GetTeamIDToContext(ctx)
 	if err != nil {
 		return nil, err
