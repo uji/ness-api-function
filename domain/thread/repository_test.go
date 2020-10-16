@@ -203,6 +203,88 @@ func TestRepoGet(t *testing.T) {
 	}
 }
 
+func TestRepo_find(t *testing.T) {
+	cases := []struct {
+		name  string
+		items []item
+		req   repositoryFindRequest
+		expt  Thread
+		err   error
+	}{
+		{
+			name: "normal",
+			items: []item{
+				{
+					PK:        "Team#0",
+					SK:        "Thread#0",
+					CreatorID: "UserID#0",
+					Content:   "Thread0",
+					Closed:    "false",
+					CreatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
+					UpdatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
+				},
+				{
+					PK:        "Team#0",
+					SK:        "Thread#1",
+					CreatorID: "UserID#1",
+					Content:   "Thread1",
+					Closed:    "true",
+					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
+					UpdatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
+				},
+				{
+					PK:        "Team#1",
+					SK:        "Thread#3",
+					CreatorID: "UserID#3",
+					Content:   "Thread3",
+					Closed:    "true",
+					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
+					UpdatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
+				},
+			},
+			req: repositoryFindRequest{
+				teamID:   "Team#0",
+				threadID: "Thread#1",
+			},
+			expt: &thread{
+				id:        "Thread#1",
+				teamID:    TeamID("Team#0"),
+				createrID: UserID("UserID#1"),
+				title:     "Thread1",
+				closed:    true,
+				createdAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
+				updatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
+			},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			dnmdb := db.NewDynamoDB()
+			tbl := db.CreateThreadTestTable(dnmdb, t)
+			defer db.DestroyTestTable(&tbl, t)
+
+			sut := NewDynamoRepository(dnmdb, tbl.Name())
+
+			for _, d := range c.items {
+				if err := tbl.Put(d).Run(); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			res, err := sut.find(context.Background(), c.req)
+			if err != c.err {
+				t.Fatal(err)
+			}
+
+			opt := cmp.AllowUnexported(thread{})
+			if diff := cmp.Diff(c.expt, res, opt); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
+}
+
 func TestRepoCreate(t *testing.T) {
 	dnmdb := db.NewDynamoDB()
 	tbl := db.CreateThreadTestTable(dnmdb, t)
@@ -219,13 +301,12 @@ func TestRepoCreate(t *testing.T) {
 		createdAt: time.Now(),
 		updatedAt: time.Now(),
 	}
-	_, err := sut.create(
+	if err := sut.create(
 		context.Background(),
 		repositoryCreateRequest{
 			thread: &thrd,
 		},
-	)
-	if err != nil {
+	); err != nil {
 		t.Fatal(err)
 	}
 
@@ -257,7 +338,7 @@ func testRepo_update(
 		}
 	}
 
-	res, err := sut.update(
+	err := sut.update(
 		context.Background(),
 		req,
 	)
@@ -272,8 +353,12 @@ func testRepo_update(
 		return
 	}
 
+	var itm item
+	if err := tbl.Get("PK", req.thread.TeamID()).Range("SK", dynamo.Equal, req.thread.ID()).One(&itm); err != nil {
+		t.Fatal(err)
+	}
 	opt := cmp.AllowUnexported(thread{})
-	if diff := cmp.Diff(req.thread, res, opt); diff != "" {
+	if diff := cmp.Diff(req.thread, itm.toThread(), opt); diff != "" {
 		t.Fatal(diff)
 	}
 }

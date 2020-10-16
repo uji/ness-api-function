@@ -60,7 +60,15 @@ func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Threa
 	return rslts, nil
 }
 
-func (d *repository) create(ctx context.Context, req repositoryCreateRequest) (Thread, error) {
+func (d *repository) find(ctx context.Context, req repositoryFindRequest) (Thread, error) {
+	var itm item
+	if err := d.tbl.Get("PK", "Team#0").Range("SK", dynamo.Equal, req.threadID).One(&itm); err != nil {
+		return nil, err
+	}
+	return itm.toThread(), nil
+}
+
+func (d *repository) create(ctx context.Context, req repositoryCreateRequest) error {
 	condition := "attribute_not_exists(PK) AND attribute_not_exists(SK)"
 	itm := newItem(req.thread)
 
@@ -69,46 +77,19 @@ func (d *repository) create(ctx context.Context, req repositoryCreateRequest) (T
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case dynamodb.ErrCodeConditionalCheckFailedException:
-				return nil, err
+				return err
 			default:
-				return nil, err
+				return err
 			}
 		}
 	}
 
-	return req.thread, nil
+	return nil
 }
 
-func (d *repository) update(ctx context.Context, req repositoryUpdateRequest) (Thread, error) {
+func (d *repository) update(ctx context.Context, req repositoryUpdateRequest) error {
 	condition := "attribute_exists(PK) AND attribute_exists(SK)"
-	if err := d.tbl.Put(newItem(req.thread)).If(condition).Run(); err != nil {
-		return nil, err
-	}
-	return req.thread, nil
-}
-
-func (d *repository) open(ctx context.Context, req repositoryOpenRequest) (Thread, error) {
-	var itm item
-	if err := d.tbl.Get("PK", "Team#0").Range("SK", dynamo.Equal, req.threadID).One(&itm); err != nil {
-		return nil, err
-	}
-
-	th := itm.toThread()
-	th.Open()
-
-	return d.update(ctx, repositoryUpdateRequest{th})
-}
-
-func (d *repository) close(ctx context.Context, req repositoryCloseRequest) (Thread, error) {
-	var itm item
-	if err := d.tbl.Get("PK", "Team#0").Range("SK", dynamo.Equal, req.threadID).One(&itm); err != nil {
-		return nil, err
-	}
-
-	th := itm.toThread()
-	th.Close()
-
-	return d.update(ctx, repositoryUpdateRequest{th})
+	return d.tbl.Put(newItem(req.thread)).If(condition).Run()
 }
 
 type item struct {
