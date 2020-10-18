@@ -111,10 +111,12 @@ func TestUsecaseCreate(t *testing.T) {
 				return &thrd, nil
 			}
 
+			ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
+			ctx = usr.SetUserIDToContext(ctx, "User#0")
 			repo := NewMockRepository(ctrl)
 			if c.useRepository {
 				repo.EXPECT().create(
-					context.Background(),
+					ctx,
 					repositoryCreateRequest{
 						thread: &thrd,
 					},
@@ -122,7 +124,7 @@ func TestUsecaseCreate(t *testing.T) {
 			}
 
 			uc := NewUsecase(gen, repo)
-			res, err := uc.Create(context.Background(), CreateRequest{
+			res, err := uc.Create(ctx, CreateRequest{
 				Title: c.title,
 			})
 			if err != c.err {

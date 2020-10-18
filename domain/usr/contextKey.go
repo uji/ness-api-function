@@ -14,6 +14,11 @@ const (
 	contextKeyTeamID contextKey = "team-id"
 )
 
+var (
+	ErrUnexpectedUserID = errors.New("Unexpected UserID")
+	ErrUnexpectedTeamID = errors.New("Unexpected TeamID")
+)
+
 func SetUserIDToContext(
 	ctx context.Context,
 	userID string,

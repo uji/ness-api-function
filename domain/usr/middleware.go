@@ -28,14 +28,16 @@ func (m *MiddleWare) Handle(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		user, err := m.uc.GetUser(r.Context(), uid)
+		user, err := m.uc.Find(r.Context(), uid)
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return
 		}
 
 		ctx := SetUserIDToContext(r.Context(), string(user.UserID()))
-		ctx = SetTeamIDToContext(ctx, string(user.OnCheckInTeamID()))
+		if user.OnCheckIn() {
+			ctx = SetTeamIDToContext(ctx, string(user.OnCheckInTeamID()))
+		}
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)

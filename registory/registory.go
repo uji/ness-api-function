@@ -19,7 +19,7 @@ func newThreadUsecase(dnmdb *dynamo.DB) *thread.Usecase {
 
 func newUserUsecase(dnmdb *dynamo.DB) *usr.Usecase {
 	rp := usr.NewDynamoRepository(dnmdb, db.UserTableName)
-	return usr.NewUsecase(rp)
+	return usr.NewUsecase(usr.DefaultGenerator, rp)
 }
 
 func NewRegisterdServer() http.Handler {

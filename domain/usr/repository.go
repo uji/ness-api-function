@@ -22,10 +22,23 @@ func NewDynamoRepository(
 	return &repository{db, &tbl}
 }
 
-func (d *repository) find(ctx context.Context, userID UserID) (User, error) {
+func (d *repository) create(ctx context.Context, user *User) error {
+	uitms := newUserItems(user)
+	condition := "attribute_not_exists(PK) AND attribute_not_exists(SK)"
+
+	wtx := d.db.WriteTx()
+	for _, uitm := range uitms {
+		put := d.tbl.Put(uitm).If(condition)
+		wtx = wtx.Put(put)
+	}
+
+	return wtx.Run()
+}
+
+func (d *repository) find(ctx context.Context, userID UserID) (*User, error) {
 	var uitms []*userItem
 	if err := d.tbl.Get("PK", string(userID)).All(&uitms); err != nil {
-		return User{}, err
+		return nil, err
 	}
 	return toUser(uitms), nil
 }
@@ -41,20 +54,22 @@ type (
 	}
 )
 
-func newUserItems(user User) []*userItem {
+func newUserItems(user *User) []*userItem {
 	uitms := make([]*userItem, len(user.Members())+1)
 
 	uitms[0] = &userItem{
-		PK:        string(user.UserID()),
-		SK:        "0",
-		CreatedAt: user.CreatedAt(),
-		UpdatedAt: user.UpdatedAt(),
+		PK:              string(user.UserID()),
+		SK:              "0",
+		Name:            user.Name(),
+		OnCheckInTeamID: string(user.OnCheckInTeamID()),
+		CreatedAt:       user.CreatedAt(),
+		UpdatedAt:       user.UpdatedAt(),
 	}
 
 	for i, m := range user.Members() {
 		uitms[i+1] = &userItem{
-			PK:        string(m.TeamID()),
-			SK:        string(user.UserID()),
+			PK:        string(user.UserID()),
+			SK:        string(m.TeamID()),
 			Name:      m.Name(),
 			CreatedAt: m.CreatedAt(),
 			UpdatedAt: m.UpdatedAt(),
@@ -63,7 +78,7 @@ func newUserItems(user User) []*userItem {
 	return uitms
 }
 
-func toUser(userItems []*userItem) User {
+func toUser(userItems []*userItem) *User {
 	var user User
 	mmbs := make([]*Member, 0, len(userItems)-1)
 	for _, u := range userItems {
@@ -85,5 +100,5 @@ func toUser(userItems []*userItem) User {
 		})
 	}
 	user.members = mmbs
-	return user
+	return &user
 }
