@@ -23,12 +23,12 @@ func SetUserIDToContext(
 
 func GetUserIDToContext(
 	ctx context.Context,
-) (UserID, error) {
+) (string, error) {
 	uid, ok := ctx.Value(contextKeyUserID).(UserID)
 	if !ok {
 		return "", errors.New("Unexpected UserID")
 	}
-	return uid, nil
+	return string(uid), nil
 }
 
 func SetTeamIDToContext(
@@ -40,10 +40,10 @@ func SetTeamIDToContext(
 
 func GetTeamIDToContext(
 	ctx context.Context,
-) (TeamID, error) {
+) (string, error) {
 	tid, ok := ctx.Value(contextKeyTeamID).(TeamID)
 	if !ok {
 		return "", errors.New("Unexpected TeamID")
 	}
-	return tid, nil
+	return string(tid), nil
 }

@@ -13,11 +13,10 @@ var (
 )
 
 type userTable struct {
-	PK              string `dynamo:",hash"`
-	SK              string `dynamo:",range"`
-	Name            string `localIndex:"PK-Name-index,range"`
-	CreatedAt       time.Time
-	OnCheckInTeamID string
+	PK        string    `dynamo:",hash"`
+	SK        string    `dynamo:",range"`
+	Name      string    `localIndex:"PK-Name-index,range"`
+	CreatedAt time.Time `localIndex:"PK-CreatedAt-index,range"`
 }
 
 func CreateUserTable(db *dynamo.DB, name string) (dynamo.Table, error) {

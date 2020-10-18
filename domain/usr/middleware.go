@@ -7,7 +7,15 @@ import (
 	firebase "firebase.google.com/go"
 )
 
-func Middleware(next http.Handler) http.Handler {
+type MiddleWare struct {
+	uc *Usecase
+}
+
+func NewMiddleWare(uc *Usecase) *MiddleWare {
+	return &MiddleWare{uc}
+}
+
+func (m *MiddleWare) Handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, err := r.Cookie("auth-cookie")
 		if err != nil || c == nil {
@@ -15,15 +23,19 @@ func Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		uid, err := verifyCookie(r.Context(), c)
+		uid, err := getUserIDFromCookie(r.Context(), c)
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return
 		}
-		user := getUser(uid)
+		user, err := m.uc.GetUser(r.Context(), uid)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
 
 		ctx := SetUserIDToContext(r.Context(), string(user.UserID()))
-		ctx = SetTeamIDToContext(ctx, string(user.TeamID()))
+		ctx = SetTeamIDToContext(ctx, string(user.OnCheckInTeamID()))
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)
@@ -40,7 +52,7 @@ func DammyMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func verifyCookie(ctx context.Context, ck *http.Cookie) (UserID, error) {
+func getUserIDFromCookie(ctx context.Context, ck *http.Cookie) (string, error) {
 	app, err := firebase.NewApp(ctx, nil)
 	if err != nil {
 		return "", err
@@ -53,12 +65,5 @@ func verifyCookie(ctx context.Context, ck *http.Cookie) (UserID, error) {
 	if err != nil {
 		return "", err
 	}
-	return UserID(tkn.UID), nil
-}
-
-func getUser(id UserID) User {
-	return User{
-		userID: id,
-		teamID: "Team#0",
-	}
+	return tkn.UID, nil
 }
