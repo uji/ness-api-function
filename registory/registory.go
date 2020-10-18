@@ -25,23 +25,23 @@ func newUserUsecase(dnmdb *dynamo.DB) *usr.Usecase {
 func NewRegisterdServer() http.Handler {
 	db := db.NewDynamoDB()
 
-	uc := newUserUsecase(db)
+	user := newUserUsecase(db)
 	thrd := newThreadUsecase(db)
 
-	rslv := graph.NewResolver(thrd)
+	rslv := graph.NewResolver(user, thrd)
 	schm := generated.NewExecutableSchema(generated.Config{Resolvers: rslv})
 
-	usrMiddleWare := usr.NewMiddleWare(uc)
+	usrMiddleWare := usr.NewMiddleWare(user)
 	return usrMiddleWare.Handle(handler.NewDefaultServer(schm))
 }
 
 func NewRegisterdServerWithDammyAuth() http.Handler {
 	db := db.NewDynamoDB()
 
-	_ = newUserUsecase(db)
+	user := newUserUsecase(db)
 	thrd := newThreadUsecase(db)
 
-	rslv := graph.NewResolver(thrd)
+	rslv := graph.NewResolver(user, thrd)
 	schm := generated.NewExecutableSchema(generated.Config{Resolvers: rslv})
 
 	return usr.DammyMiddleware(handler.NewDefaultServer(schm))

@@ -21,14 +21,17 @@ func NewUsecase(
 
 type (
 	CreateRequest struct {
-		UserID string
-		Name   string
+		Name string
 	}
 )
 
 func (u *Usecase) Create(ctx context.Context, req CreateRequest) (*User, error) {
+	userID, err := GetUserIDToContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	usr, err := u.gen(userAttribute{
-		userID: req.UserID,
+		userID: userID,
 		name:   req.Name,
 	})
 	if err != nil {

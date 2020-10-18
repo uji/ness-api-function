@@ -23,6 +23,10 @@ type OpenThread struct {
 	ThreadID string `json:"threadID"`
 }
 
+type SignUp struct {
+	Name string `json:"name"`
+}
+
 type Thread struct {
 	ID        string `json:"id"`
 	Title     string `json:"title"`
@@ -32,3 +36,12 @@ type Thread struct {
 }
 
 func (Thread) IsNode() {}
+
+type User struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
+}
+
+func (User) IsNode() {}
