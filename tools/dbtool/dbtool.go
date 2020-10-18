@@ -31,9 +31,15 @@ func main() {
 		if _, err := db.CreateThreadTable(dnmdb, db.ThreadTableName); err != nil {
 			fmt.Fprintf(os.Stderr, err.Error()+"\n")
 		}
+		if _, err := db.CreateUserTable(dnmdb, db.UserTableName); err != nil {
+			fmt.Fprintf(os.Stderr, err.Error()+"\n")
+		}
 	case "destroy":
 		dnmdb := db.NewDynamoDB()
-		if err := db.DestroyTreadTable(dnmdb, db.ThreadTableName); err != nil {
+		if err := db.DestroyThreadTable(dnmdb, db.ThreadTableName); err != nil {
+			fmt.Fprintf(os.Stderr, err.Error()+"\n")
+		}
+		if err := db.DestroyUserTable(dnmdb, db.UserTableName); err != nil {
 			fmt.Fprintf(os.Stderr, err.Error()+"\n")
 		}
 	default:
