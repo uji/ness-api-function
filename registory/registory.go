@@ -1,6 +1,8 @@
 package registory
 
 import (
+	"net/http"
+
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/guregu/dynamo"
 	"github.com/uji/ness-api-function/domain/thread"
@@ -20,7 +22,20 @@ func newUserUsecase(dnmdb *dynamo.DB) *usr.Usecase {
 	return usr.NewUsecase(rp)
 }
 
-func NewRegisterdServer() *handler.Server {
+func NewRegisterdServer() http.Handler {
+	db := db.NewDynamoDB()
+
+	uc := newUserUsecase(db)
+	thrd := newThreadUsecase(db)
+
+	rslv := graph.NewResolver(thrd)
+	schm := generated.NewExecutableSchema(generated.Config{Resolvers: rslv})
+
+	usrMiddleWare := usr.NewMiddleWare(uc)
+	return usrMiddleWare.Handle(handler.NewDefaultServer(schm))
+}
+
+func NewRegisterdServerWithDammyAuth() http.Handler {
 	db := db.NewDynamoDB()
 
 	_ = newUserUsecase(db)
@@ -28,5 +43,6 @@ func NewRegisterdServer() *handler.Server {
 
 	rslv := graph.NewResolver(thrd)
 	schm := generated.NewExecutableSchema(generated.Config{Resolvers: rslv})
-	return handler.NewDefaultServer(schm)
+
+	return usr.DammyMiddleware(handler.NewDefaultServer(schm))
 }

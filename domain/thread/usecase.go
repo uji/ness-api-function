@@ -27,14 +27,6 @@ type (
 		thread Thread
 	}
 
-	repositoryOpenRequest struct {
-		threadID string
-	}
-
-	repositoryCloseRequest struct {
-		threadID string
-	}
-
 	Repository interface {
 		get(context.Context, repositoryGetRequest) ([]Thread, error)
 		find(context.Context, repositoryFindRequest) (Thread, error)
@@ -89,7 +81,13 @@ func (u *Usecase) Create(ctx context.Context, req CreateRequest) (Thread, error)
 		return nil, ErrorTitleIsRequired
 	}
 	uid, err := usr.GetUserIDToContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	tid, err := usr.GetTeamIDToContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	th, err := u.gen(threadAttribute{
 		Title:     req.Title,
 		TeamID:    TeamID(tid),

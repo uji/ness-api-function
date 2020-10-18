@@ -9,7 +9,6 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/rs/cors"
-	"github.com/uji/ness-api-function/domain/usr"
 	"github.com/uji/ness-api-function/registory"
 )
 
@@ -36,16 +35,17 @@ func main() {
 		port = defaultPort
 	}
 
-	srv := registory.NewRegisterdServer()
-
 	c := cors.AllowAll()
 
 	http.Handle("/", c.Handler(playground.Handler("GraphQL playground", "/query")))
+
+	var srv http.Handler
 	if *TeamID != "" && *UserID != "" {
-		http.Handle("/query", c.Handler(usr.DammyMiddleware(srv)))
+		srv = registory.NewRegisterdServerWithDammyAuth()
 	} else {
-		http.Handle("/query", c.Handler(srv))
+		srv = registory.NewRegisterdServer()
 	}
+	http.Handle("/query", c.Handler(srv))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
