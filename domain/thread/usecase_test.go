@@ -9,7 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	"github.com/guregu/null"
-	"github.com/uji/ness-api-function/domain/nessauth"
+	"github.com/uji/ness-api-function/domain/usr"
 )
 
 func TestUsecaseGet(t *testing.T) {
@@ -152,7 +152,7 @@ func TestUsecase_Open(t *testing.T) {
 		id:     "thread",
 		closed: true,
 	}
-	ctx := nessauth.SetTeamIDToContext(context.Background(), "Team#0")
+	ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
 	repo.EXPECT().find(ctx, repositoryFindRequest{
 		threadID: "thread",
 		teamID:   "Team#0",
@@ -183,7 +183,7 @@ func TestUsecase_OpenError(t *testing.T) {
 		id: "thread",
 	}
 	terr := errors.New("test")
-	ctx := nessauth.SetTeamIDToContext(context.Background(), "Team#0")
+	ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
 	repo.EXPECT().find(ctx, repositoryFindRequest{
 		threadID: "thread",
 		teamID:   "Team#0",
@@ -205,7 +205,7 @@ func TestUsecase_Close(t *testing.T) {
 		id:     "thread",
 		closed: false,
 	}
-	ctx := nessauth.SetTeamIDToContext(context.Background(), "Team#0")
+	ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
 	repo.EXPECT().find(ctx, repositoryFindRequest{
 		threadID: "thread",
 		teamID:   "Team#0",
@@ -234,7 +234,7 @@ func TestUsecase_CloseError(t *testing.T) {
 		id: "thread",
 	}
 	terr := errors.New("test")
-	ctx := nessauth.SetTeamIDToContext(context.Background(), "Team#0")
+	ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
 	repo.EXPECT().find(ctx, repositoryFindRequest{
 		threadID: "thread",
 		teamID:   "Team#0",

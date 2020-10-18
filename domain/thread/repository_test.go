@@ -8,7 +8,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/guregu/dynamo"
 	"github.com/guregu/null"
-	"github.com/uji/ness-api-function/domain/nessauth"
+	"github.com/uji/ness-api-function/domain/usr"
 	"github.com/uji/ness-api-function/infra/db"
 )
 
@@ -186,7 +186,7 @@ func TestRepoGet(t *testing.T) {
 				}
 			}
 
-			ctx := nessauth.SetTeamIDToContext(context.Background(), "Team#0")
+			ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
 			res, err := sut.get(ctx, repositoryGetRequest{
 				offsetTime: c.offsetTime,
 				closed:     c.closed,

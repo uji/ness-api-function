@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/guregu/null"
-	"github.com/uji/ness-api-function/domain/nessauth"
+	"github.com/uji/ness-api-function/domain/usr"
 )
 
 type (
@@ -88,8 +88,8 @@ func (u *Usecase) Create(ctx context.Context, req CreateRequest) (Thread, error)
 	if req.Title == "" {
 		return nil, ErrorTitleIsRequired
 	}
-	uid, err := nessauth.GetUserIDToContext(ctx)
-	tid, err := nessauth.GetTeamIDToContext(ctx)
+	uid, err := usr.GetUserIDToContext(ctx)
+	tid, err := usr.GetTeamIDToContext(ctx)
 	th, err := u.gen(threadAttribute{
 		Title:     req.Title,
 		TeamID:    TeamID(tid),
@@ -107,7 +107,7 @@ func (u *Usecase) Create(ctx context.Context, req CreateRequest) (Thread, error)
 }
 
 func (u *Usecase) Open(ctx context.Context, req OpenRequest) (Thread, error) {
-	tid, err := nessauth.GetTeamIDToContext(ctx)
+	tid, err := usr.GetTeamIDToContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (u *Usecase) Open(ctx context.Context, req OpenRequest) (Thread, error) {
 }
 
 func (u *Usecase) Close(ctx context.Context, req CloseRequest) (Thread, error) {
-	tid, err := nessauth.GetTeamIDToContext(ctx)
+	tid, err := usr.GetTeamIDToContext(ctx)
 	if err != nil {
 		return nil, err
 	}

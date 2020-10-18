@@ -1,4 +1,4 @@
-package nessauth
+package usr
 
 import (
 	"context"

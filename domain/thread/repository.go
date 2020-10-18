@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/guregu/dynamo"
-	"github.com/uji/ness-api-function/domain/nessauth"
+	"github.com/uji/ness-api-function/domain/usr"
 )
 
 type repository struct {
@@ -32,7 +32,7 @@ func NewDynamoRepository(
 
 func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Thread, error) {
 	var items []item
-	teamID, err := nessauth.GetTeamIDToContext(ctx)
+	teamID, err := usr.GetTeamIDToContext(ctx)
 	if err != nil {
 		return nil, err
 	}

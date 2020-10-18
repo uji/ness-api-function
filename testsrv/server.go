@@ -9,7 +9,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/rs/cors"
-	"github.com/uji/ness-api-function/domain/nessauth"
+	"github.com/uji/ness-api-function/domain/usr"
 	"github.com/uji/ness-api-function/registory"
 )
 
@@ -42,7 +42,7 @@ func main() {
 
 	http.Handle("/", c.Handler(playground.Handler("GraphQL playground", "/query")))
 	if *TeamID != "" && *UserID != "" {
-		http.Handle("/query", c.Handler(nessauth.DammyMiddleware(srv)))
+		http.Handle("/query", c.Handler(usr.DammyMiddleware(srv)))
 	} else {
 		http.Handle("/query", c.Handler(srv))
 	}
