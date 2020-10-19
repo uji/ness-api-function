@@ -4,15 +4,19 @@ import (
 	"context"
 	"net/http"
 
-	firebase "firebase.google.com/go"
+	"firebase.google.com/go/auth"
 )
 
 type MiddleWare struct {
-	uc *Usecase
+	fbsauth *auth.Client
+	uc      *Usecase
 }
 
-func NewMiddleWare(uc *Usecase) *MiddleWare {
-	return &MiddleWare{uc}
+func NewMiddleWare(
+	fbc *auth.Client,
+	uc *Usecase,
+) *MiddleWare {
+	return &MiddleWare{fbc, uc}
 }
 
 func (m *MiddleWare) Handle(next http.Handler) http.Handler {
@@ -23,7 +27,7 @@ func (m *MiddleWare) Handle(next http.Handler) http.Handler {
 			return
 		}
 
-		uid, err := getUserIDFromCookie(r.Context(), c)
+		uid, err := m.getUserIDFromCookie(r.Context(), c)
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return
@@ -54,16 +58,8 @@ func DammyMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func getUserIDFromCookie(ctx context.Context, ck *http.Cookie) (string, error) {
-	app, err := firebase.NewApp(ctx, nil)
-	if err != nil {
-		return "", err
-	}
-	c, err := app.Auth(ctx)
-	if err != nil {
-		return "", err
-	}
-	tkn, err := c.VerifySessionCookie(ctx, ck.Value)
+func (m *MiddleWare) getUserIDFromCookie(ctx context.Context, ck *http.Cookie) (string, error) {
+	tkn, err := m.fbsauth.VerifySessionCookie(ctx, ck.Value)
 	if err != nil {
 		return "", err
 	}

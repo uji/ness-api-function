@@ -1,6 +1,8 @@
 package usr
 
-import "context"
+import (
+	"context"
+)
 
 type Repository interface {
 	create(context.Context, *User) error

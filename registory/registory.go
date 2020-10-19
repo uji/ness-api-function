@@ -1,6 +1,7 @@
 package registory
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -10,6 +11,7 @@ import (
 	"github.com/uji/ness-api-function/graph"
 	"github.com/uji/ness-api-function/graph/generated"
 	"github.com/uji/ness-api-function/infra/db"
+	"github.com/uji/ness-api-function/infra/fbs"
 )
 
 func newThreadUsecase(dnmdb *dynamo.DB) *thread.Usecase {
@@ -24,6 +26,10 @@ func newUserUsecase(dnmdb *dynamo.DB) *usr.Usecase {
 
 func NewRegisterdServer() http.Handler {
 	db := db.NewDynamoDB()
+	fbsauth, err := fbs.NewAuthClient(context.Background())
+	if err != nil {
+		panic(err)
+	}
 
 	user := newUserUsecase(db)
 	thrd := newThreadUsecase(db)
@@ -31,7 +37,7 @@ func NewRegisterdServer() http.Handler {
 	rslv := graph.NewResolver(user, thrd)
 	schm := generated.NewExecutableSchema(generated.Config{Resolvers: rslv})
 
-	usrMiddleWare := usr.NewMiddleWare(user)
+	usrMiddleWare := usr.NewMiddleWare(fbsauth, user)
 	return usrMiddleWare.Handle(handler.NewDefaultServer(schm))
 }
 
