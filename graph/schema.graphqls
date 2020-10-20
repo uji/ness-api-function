@@ -33,10 +33,6 @@ type Query {
   threads(input: GetThreadsInput!): [Thread!]!
 }
 
-input SignUp {
-  name: String!
-}
-
 input NewThread {
   title: String!
 }
@@ -50,7 +46,6 @@ input CloseThread {
 }
 
 type Mutation {
-  signUp(input: SignUp!): User!
   createThread(input: NewThread!): Thread!
   openThread(input: OpenThread!): Thread!
   closeThread(input: CloseThread!): Thread!

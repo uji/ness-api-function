@@ -79,6 +79,9 @@ func newUserItems(user *User) []*userItem {
 }
 
 func toUser(userItems []*userItem) *User {
+	if len(userItems) == 0 {
+		return nil
+	}
 	var user User
 	mmbs := make([]*Member, 0, len(userItems)-1)
 	for _, u := range userItems {

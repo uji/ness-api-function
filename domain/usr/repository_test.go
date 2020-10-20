@@ -210,6 +210,12 @@ func TestRepository_Find(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:   "not found",
+			items:  []*userItem{},
+			userID: "User#0",
+			expt:   nil,
+		},
 	}
 
 	for _, c := range cases {

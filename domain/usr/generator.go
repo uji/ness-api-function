@@ -3,17 +3,17 @@ package usr
 import "time"
 
 type (
-	userAttribute struct {
+	UserAttribute struct {
 		userID string
 		name   string
 	}
 
-	Generator func(attr userAttribute) (*User, error)
+	Generator func(attr UserAttribute) (*User, error)
 )
 
 var _ Generator = DefaultGenerator
 
-func DefaultGenerator(attr userAttribute) (*User, error) {
+func DefaultGenerator(attr UserAttribute) (*User, error) {
 	return &User{
 		userID:          UserID(attr.userID),
 		onCheckInTeamID: "",

@@ -1,8 +1,15 @@
+//go:generate mockgen -source=$GOFILE -destination=mock_$GOFILE -package=$GOPACKAGE
 package usr
 
 import (
 	"context"
+
+	"firebase.google.com/go/auth"
 )
+
+type FireBaseAuthClient interface {
+	GetUser(ctx context.Context, uid string) (*auth.UserRecord, error)
+}
 
 type Repository interface {
 	create(context.Context, *User) error
@@ -10,15 +17,17 @@ type Repository interface {
 }
 
 type Usecase struct {
-	gen  Generator
-	repo Repository
+	fbsauth FireBaseAuthClient
+	gen     Generator
+	repo    Repository
 }
 
 func NewUsecase(
+	fbsauth FireBaseAuthClient,
 	gen Generator,
 	repo Repository,
 ) *Usecase {
-	return &Usecase{gen, repo}
+	return &Usecase{fbsauth, gen, repo}
 }
 
 type (
@@ -32,12 +41,12 @@ func (u *Usecase) Create(ctx context.Context, req CreateRequest) (*User, error) 
 	if err != nil {
 		return nil, err
 	}
-	usr, err := u.gen(userAttribute{
+	usr, err := u.gen(UserAttribute{
 		userID: userID,
 		name:   req.Name,
 	})
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	if err := u.repo.create(ctx, usr); err != nil {
 		return nil, err
@@ -50,5 +59,24 @@ func (u *Usecase) Find(ctx context.Context, userID string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	return usr, err
+
+	if usr != nil {
+		return usr, nil
+	}
+
+	fbsUsr, err := u.fbsauth.GetUser(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	newUsr, err := u.gen(UserAttribute{
+		userID: userID,
+		name:   fbsUsr.DisplayName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err := u.repo.create(ctx, newUsr); err != nil {
+		return nil, err
+	}
+	return newUsr, nil
 }
