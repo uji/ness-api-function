@@ -48,10 +48,10 @@ func (m *MiddleWare) Handle(next http.Handler) http.Handler {
 	})
 }
 
-func DammyMiddleware(next http.Handler) http.Handler {
+func DammyMiddleware(userID, teamID string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := SetUserIDToContext(r.Context(), "User#0")
-		ctx = SetTeamIDToContext(ctx, "Team#0")
+		ctx := SetUserIDToContext(r.Context(), userID)
+		ctx = SetTeamIDToContext(ctx, teamID)
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)

@@ -19,7 +19,7 @@ type (
 var _ Generator = DefaultGenerator
 
 func DefaultGenerator(attr threadAttribute) (Thread, error) {
-	id := "Thread#" + uuid.New().String()
+	id := "Thread-" + uuid.New().String()
 	return &thread{
 		id:        id,
 		teamID:    attr.TeamID,

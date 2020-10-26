@@ -31,7 +31,7 @@ func NewRegisterdServer() http.Handler {
 	return usrMdl.Handle(handler.NewDefaultServer(schm))
 }
 
-func NewRegisterdServerWithDammyAuth() http.Handler {
+func NewRegisterdServerWithDammyAuth(teamID, userID string) http.Handler {
 	dnmdb := db.NewDynamoDB()
 	fbsauth := &usr.DammyFireBaseAuthClient{}
 
@@ -42,5 +42,5 @@ func NewRegisterdServerWithDammyAuth() http.Handler {
 
 	rslv := graph.NewResolver(user, thrd)
 	schm := generated.NewExecutableSchema(generated.Config{Resolvers: rslv})
-	return usr.DammyMiddleware(handler.NewDefaultServer(schm))
+	return usr.DammyMiddleware(userID, teamID, handler.NewDefaultServer(schm))
 }

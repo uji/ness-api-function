@@ -40,9 +40,10 @@ func main() {
 	http.Handle("/", c.Handler(playground.Handler("GraphQL playground", "/query")))
 
 	var srv http.Handler
-	if UserID != nil && *UserID != "" {
-		srv = registory.NewRegisterdServerWithDammyAuth()
-		log.Printf("use dammy authentication middleware UserID=%s", *UserID)
+	if UserID != nil && *UserID != "" &&
+		TeamID != nil && *TeamID != "" {
+		srv = registory.NewRegisterdServerWithDammyAuth(*TeamID, *UserID)
+		log.Printf("use dammy authentication middleware TeamID=%s UserID=%s", *TeamID, *UserID)
 	} else {
 		srv = registory.NewRegisterdServer()
 	}
