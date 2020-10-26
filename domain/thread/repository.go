@@ -62,7 +62,12 @@ func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Threa
 
 func (d *repository) find(ctx context.Context, req repositoryFindRequest) (Thread, error) {
 	var itm item
-	if err := d.tbl.Get("PK", "Team#0").Range("SK", dynamo.Equal, req.threadID).One(&itm); err != nil {
+	teamID, err := usr.GetTeamIDToContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := d.tbl.Get("PK", teamID).Range("SK", dynamo.Equal, req.threadID).One(&itm); err != nil {
 		return nil, err
 	}
 	return itm.toThread(), nil

@@ -272,7 +272,8 @@ func TestRepo_find(t *testing.T) {
 				}
 			}
 
-			res, err := sut.find(context.Background(), c.req)
+			ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
+			res, err := sut.find(ctx, c.req)
 			if err != c.err {
 				t.Fatal(err)
 			}
