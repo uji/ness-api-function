@@ -23,4 +23,5 @@ require (
 	github.com/onsi/ginkgo v1.14.0 // indirect
 	github.com/rs/cors v1.7.0
 	github.com/vektah/gqlparser/v2 v2.0.1
+	google.golang.org/api v0.32.0
 )
