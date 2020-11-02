@@ -59,7 +59,7 @@ func DammyMiddleware(userID, teamID string, next http.Handler) http.Handler {
 }
 
 func (m *MiddleWare) getUserIDFromCookie(ctx context.Context, ck *http.Cookie) (string, error) {
-	tkn, err := m.fbsauth.VerifySessionCookie(ctx, ck.Value)
+	tkn, err := m.fbsauth.VerifyIDTokenAndCheckRevoked(ctx, ck.Value)
 	if err != nil {
 		return "", err
 	}
