@@ -35,7 +35,20 @@ func main() {
 		port = defaultPort
 	}
 
-	c := cors.AllowAll()
+	opt := cors.Options{
+		AllowedOrigins: []string{"http://localhost:8080"},
+		AllowedMethods: []string{
+			http.MethodHead,
+			http.MethodGet,
+			http.MethodPost,
+			http.MethodPut,
+			http.MethodPatch,
+			http.MethodDelete,
+		},
+		AllowedHeaders:   []string{"*"},
+		AllowCredentials: true,
+	}
+	c := cors.New(opt)
 
 	http.Handle("/", c.Handler(playground.Handler("GraphQL playground", "/query")))
 
