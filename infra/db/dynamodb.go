@@ -16,16 +16,20 @@ var (
 )
 
 func NewDynamoDB() *dynamo.DB {
-	ep := os.Getenv("DB_ENDPOINT")
 	ssn, err := session.NewSession()
 	if err != nil {
 		panic(err)
 	}
-	return dynamo.New(ssn,
-		&aws.Config{
+
+	ep := os.Getenv("DB_ENDPOINT")
+	cfs := make([]*aws.Config, 0, 1)
+	if ep != "" {
+		cfs = append(cfs, &aws.Config{
 			Endpoint: &ep,
-		},
-	)
+		})
+	}
+
+	return dynamo.New(ssn, cfs...)
 }
 
 type threadTable struct {
