@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/awslabs/aws-lambda-go-api-proxy/gorillamux"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	"github.com/uji/ness-api-function/registory"
 )
 
@@ -17,8 +19,23 @@ func init() {
 	r := mux.NewRouter()
 	srv := registory.NewRegisterdServer()
 
-	r.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	r.Handle("/query", srv)
+	opt := cors.Options{
+		AllowedOrigins: []string{"http://localhost:8080"},
+		AllowedMethods: []string{
+			http.MethodHead,
+			http.MethodGet,
+			http.MethodPost,
+			http.MethodPut,
+			http.MethodPatch,
+			http.MethodDelete,
+		},
+		AllowedHeaders:   []string{"*"},
+		AllowCredentials: true,
+	}
+	c := cors.New(opt)
+
+	r.Handle("/", c.Handler(playground.Handler("GraphQL playground", "/query")))
+	r.Handle("/query", c.Handler(srv))
 
 	muxAdpt = gorillamux.New(r)
 }
