@@ -2,6 +2,7 @@ package usr
 
 import (
 	"context"
+	"log"
 	"net/http"
 
 	"firebase.google.com/go/auth"
@@ -23,17 +24,20 @@ func (m *MiddleWare) Handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, err := r.Cookie("auth-cookie")
 		if err != nil || c == nil {
+			log.Println("not found cookie: ", err)
 			next.ServeHTTP(w, r)
 			return
 		}
 
 		uid, err := m.getUserIDFromCookie(r.Context(), c)
 		if err != nil {
+			log.Println("can not get userID", err)
 			next.ServeHTTP(w, r)
 			return
 		}
 		user, err := m.uc.Find(r.Context(), uid)
 		if err != nil {
+			log.Println("failed find user", err)
 			next.ServeHTTP(w, r)
 			return
 		}
