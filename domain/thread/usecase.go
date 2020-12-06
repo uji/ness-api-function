@@ -5,12 +5,18 @@ import (
 	"time"
 
 	"github.com/guregu/null"
+	"github.com/uji/ness-api-function/domain/usr"
 )
 
 type (
 	repositoryGetRequest struct {
 		offsetTime null.Time
 		closed     null.Bool
+	}
+
+	repositoryFindRequest struct {
+		teamID   TeamID
+		threadID string
 	}
 
 	repositoryCreateRequest struct {
@@ -21,20 +27,11 @@ type (
 		thread Thread
 	}
 
-	repositoryOpenRequest struct {
-		threadID string
-	}
-
-	repositoryCloseRequest struct {
-		threadID string
-	}
-
 	Repository interface {
 		get(context.Context, repositoryGetRequest) ([]Thread, error)
-		create(context.Context, repositoryCreateRequest) (Thread, error)
-		update(context.Context, repositoryUpdateRequest) (Thread, error)
-		open(context.Context, repositoryOpenRequest) (Thread, error)
-		close(context.Context, repositoryCloseRequest) (Thread, error)
+		find(context.Context, repositoryFindRequest) (Thread, error)
+		create(context.Context, repositoryCreateRequest) error
+		update(context.Context, repositoryUpdateRequest) error
 	}
 
 	Usecase struct {
@@ -83,25 +80,68 @@ func (u *Usecase) Create(ctx context.Context, req CreateRequest) (Thread, error)
 	if req.Title == "" {
 		return nil, ErrorTitleIsRequired
 	}
-	th, err := u.gen(ThreadAttribute(req))
+	uid, err := usr.GetUserIDToContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return u.repo.create(ctx, repositoryCreateRequest{
-		thread: th,
+	tid, err := usr.GetTeamIDToContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	th, err := u.gen(threadAttribute{
+		Title:     req.Title,
+		TeamID:    TeamID(tid),
+		CreatorID: UserID(uid),
 	})
+	if err != nil {
+		return nil, err
+	}
+	if err := u.repo.create(ctx, repositoryCreateRequest{
+		thread: th,
+	}); err != nil {
+		return nil, err
+	}
+	return th, nil
 }
 
 func (u *Usecase) Open(ctx context.Context, req OpenRequest) (Thread, error) {
-	res, err := u.repo.open(ctx, repositoryOpenRequest{
+	tid, err := usr.GetTeamIDToContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	th, err := u.repo.find(ctx, repositoryFindRequest{
+		teamID:   TeamID(tid),
 		threadID: req.ThreadID,
 	})
-	return res, err
+	if err != nil {
+		return nil, err
+	}
+	th.Open()
+	if err := u.repo.update(ctx, repositoryUpdateRequest{
+		thread: th,
+	}); err != nil {
+		return nil, err
+	}
+	return th, nil
 }
 
 func (u *Usecase) Close(ctx context.Context, req CloseRequest) (Thread, error) {
-	res, err := u.repo.close(ctx, repositoryCloseRequest{
+	tid, err := usr.GetTeamIDToContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	th, err := u.repo.find(ctx, repositoryFindRequest{
+		teamID:   TeamID(tid),
 		threadID: req.ThreadID,
 	})
-	return res, err
+	if err != nil {
+		return nil, err
+	}
+	th.Close()
+	if err := u.repo.update(ctx, repositoryUpdateRequest{
+		thread: th,
+	}); err != nil {
+		return nil, err
+	}
+	return th, nil
 }

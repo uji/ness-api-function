@@ -9,6 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	"github.com/guregu/null"
+	"github.com/uji/ness-api-function/domain/usr"
 )
 
 func TestUsecaseGet(t *testing.T) {
@@ -106,22 +107,24 @@ func TestUsecaseCreate(t *testing.T) {
 				closed: false,
 			}
 
-			gen := func(attr ThreadAttribute) (Thread, error) {
+			gen := func(attr threadAttribute) (Thread, error) {
 				return &thrd, nil
 			}
 
+			ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
+			ctx = usr.SetUserIDToContext(ctx, "User#0")
 			repo := NewMockRepository(ctrl)
 			if c.useRepository {
 				repo.EXPECT().create(
-					context.Background(),
+					ctx,
 					repositoryCreateRequest{
 						thread: &thrd,
 					},
-				).Return(&thrd, nil)
+				).Return(nil)
 			}
 
 			uc := NewUsecase(gen, repo)
-			res, err := uc.Create(context.Background(), CreateRequest{
+			res, err := uc.Create(ctx, CreateRequest{
 				Title: c.title,
 			})
 			if err != c.err {
@@ -148,10 +151,18 @@ func TestUsecase_Open(t *testing.T) {
 	uc := NewUsecase(DefaultGenerator, repo)
 
 	thrd := thread{
-		id: "thread",
+		id:     "thread",
+		closed: true,
 	}
-	repo.EXPECT().open(context.Background(), repositoryOpenRequest{threadID: "thread"}).Return(&thrd, nil)
-	res, err := uc.Open(context.Background(), OpenRequest{
+	ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
+	repo.EXPECT().find(ctx, repositoryFindRequest{
+		threadID: "thread",
+		teamID:   "Team#0",
+	}).Return(&thrd, nil)
+	repo.EXPECT().update(ctx, repositoryUpdateRequest{
+		thread: &thrd,
+	}).Return(nil)
+	res, err := uc.Open(ctx, OpenRequest{
 		ThreadID: "thread",
 	})
 	if err != nil {
@@ -174,8 +185,12 @@ func TestUsecase_OpenError(t *testing.T) {
 		id: "thread",
 	}
 	terr := errors.New("test")
-	repo.EXPECT().open(context.Background(), repositoryOpenRequest{threadID: "thread"}).Return(&thrd, terr)
-	if _, err := uc.Open(context.Background(), OpenRequest{
+	ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
+	repo.EXPECT().find(ctx, repositoryFindRequest{
+		threadID: "thread",
+		teamID:   "Team#0",
+	}).Return(&thrd, terr)
+	if _, err := uc.Open(ctx, OpenRequest{
 		ThreadID: "thread",
 	}); err != terr {
 		t.Fatal(err)
@@ -189,10 +204,16 @@ func TestUsecase_Close(t *testing.T) {
 	uc := NewUsecase(DefaultGenerator, repo)
 
 	thrd := thread{
-		id: "thread",
+		id:     "thread",
+		closed: false,
 	}
-	repo.EXPECT().close(context.Background(), repositoryCloseRequest{threadID: "thread"}).Return(&thrd, nil)
-	res, err := uc.Close(context.Background(), CloseRequest{
+	ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
+	repo.EXPECT().find(ctx, repositoryFindRequest{
+		threadID: "thread",
+		teamID:   "Team#0",
+	}).Return(&thrd, nil)
+	repo.EXPECT().update(ctx, repositoryUpdateRequest{thread: &thrd}).Return(nil)
+	res, err := uc.Close(ctx, CloseRequest{
 		ThreadID: "thread",
 	})
 	if err != nil {
@@ -215,8 +236,12 @@ func TestUsecase_CloseError(t *testing.T) {
 		id: "thread",
 	}
 	terr := errors.New("test")
-	repo.EXPECT().close(context.Background(), repositoryCloseRequest{threadID: "thread"}).Return(&thrd, terr)
-	if _, err := uc.Close(context.Background(), CloseRequest{
+	ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
+	repo.EXPECT().find(ctx, repositoryFindRequest{
+		threadID: "thread",
+		teamID:   "Team#0",
+	}).Return(&thrd, terr)
+	if _, err := uc.Close(ctx, CloseRequest{
 		ThreadID: "thread",
 	}); err != terr {
 		t.Fatal(err)

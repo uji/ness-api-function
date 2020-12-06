@@ -1,36 +1,16 @@
 package db
 
 import (
-	"os"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/guregu/dynamo"
 )
 
 var (
 	ThreadTableName = "Thread"
 )
-
-func NewDynamoDB() *dynamo.DB {
-	ssn, err := session.NewSession()
-	if err != nil {
-		panic(err)
-	}
-
-	ep := os.Getenv("DB_ENDPOINT")
-	cfs := make([]*aws.Config, 0, 1)
-	if ep != "" {
-		cfs = append(cfs, &aws.Config{
-			Endpoint: &ep,
-		})
-	}
-
-	return dynamo.New(ssn, cfs...)
-}
 
 type threadTable struct {
 	PK        string    `dynamo:",hash"`
@@ -56,13 +36,7 @@ func CreateThreadTestTable(db *dynamo.DB, t *testing.T) dynamo.Table {
 	return tbl
 }
 
-func DestroyTestTable(tbl *dynamo.Table, t *testing.T) {
-	if err := tbl.DeleteTable().Run(); err != nil {
-		t.Fatal("create Thread table", err)
-	}
-}
-
-func DestroyTreadTable(db *dynamo.DB, name string) error {
+func DestroyThreadTable(db *dynamo.DB, name string) error {
 	tbl := db.Table(name)
 	return tbl.DeleteTable().Run()
 }

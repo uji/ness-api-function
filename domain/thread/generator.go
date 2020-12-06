@@ -7,19 +7,23 @@ import (
 )
 
 type (
-	Generator func(attr ThreadAttribute) (Thread, error)
+	Generator func(attr threadAttribute) (Thread, error)
 
-	ThreadAttribute struct {
-		Title string
+	threadAttribute struct {
+		Title     string
+		TeamID    TeamID
+		CreatorID UserID
 	}
 )
 
 var _ Generator = DefaultGenerator
 
-func DefaultGenerator(attr ThreadAttribute) (Thread, error) {
-	id := "Thread#" + uuid.New().String()
+func DefaultGenerator(attr threadAttribute) (Thread, error) {
+	id := "Thread-" + uuid.New().String()
 	return &thread{
 		id:        id,
+		teamID:    attr.TeamID,
+		createrID: attr.CreatorID,
 		title:     attr.Title,
 		closed:    false,
 		createdAt: time.Now(),

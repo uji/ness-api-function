@@ -8,6 +8,13 @@ interface Node {
   id: ID!
 }
 
+type User implements Node {
+  id: ID!
+  name: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
 type Thread implements Node {
   id: ID!
   title: String!
