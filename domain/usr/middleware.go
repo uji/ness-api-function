@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strings"
 
 	"firebase.google.com/go/auth"
 )
@@ -20,16 +21,27 @@ func NewMiddleWare(
 	return &MiddleWare{fbc, uc}
 }
 
+const (
+	bearerPrefix = "Bearer "
+)
+
 func (m *MiddleWare) Handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c, err := r.Cookie("auth-cookie")
-		if err != nil || c == nil {
-			log.Println("not found cookie: ", err)
+		h := r.Header.Get("Authorization")
+		if h == "" {
+			log.Println("not found Bearer token")
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		uid, err := m.getUserIDFromCookie(r.Context(), c)
+		if !strings.HasPrefix(h, bearerPrefix) {
+			log.Println("not found Bearer prefix: ", h)
+			next.ServeHTTP(w, r)
+			return
+		}
+		tkn := strings.Replace(h, bearerPrefix, "", 1)
+
+		uid, err := m.getUserIDFromCookie(r.Context(), tkn)
 		if err != nil {
 			log.Println("can not get userID", err)
 			next.ServeHTTP(w, r)
@@ -62,8 +74,8 @@ func DammyMiddleware(userID, teamID string, next http.Handler) http.Handler {
 	})
 }
 
-func (m *MiddleWare) getUserIDFromCookie(ctx context.Context, ck *http.Cookie) (string, error) {
-	tkn, err := m.fbsauth.VerifyIDTokenAndCheckRevoked(ctx, ck.Value)
+func (m *MiddleWare) getUserIDFromCookie(ctx context.Context, idToken string) (string, error) {
+	tkn, err := m.fbsauth.VerifyIDTokenAndCheckRevoked(ctx, idToken)
 	if err != nil {
 		return "", err
 	}
