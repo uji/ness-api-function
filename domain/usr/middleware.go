@@ -20,9 +20,13 @@ func NewMiddleWare(
 	return &MiddleWare{fbc, uc}
 }
 
+const (
+	cookieName = "auth-cookie"
+)
+
 func (m *MiddleWare) Handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c, err := r.Cookie("auth-cookie")
+		c, err := r.Cookie(cookieName)
 		if err != nil || c == nil {
 			log.Println("not found cookie: ", err)
 			next.ServeHTTP(w, r)
@@ -47,6 +51,9 @@ func (m *MiddleWare) Handle(next http.Handler) http.Handler {
 			ctx = SetTeamIDToContext(ctx, string(user.OnCheckInTeamID()))
 		}
 		r = r.WithContext(ctx)
+
+		c.SameSite = http.SameSiteNoneMode
+		http.SetCookie(w, c)
 
 		next.ServeHTTP(w, r)
 	})
