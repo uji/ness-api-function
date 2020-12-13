@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"net/http"
 
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -41,6 +42,7 @@ func init() {
 }
 
 func handle(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	log.Println("request info: ", req.Body, req.Headers, req.MultiValueHeaders)
 	return muxAdpt.Proxy(req)
 }
 
