@@ -9,7 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	"github.com/guregu/null"
-	"github.com/uji/ness-api-function/domain/usr"
+	"github.com/uji/ness-api-function/reqctx"
 )
 
 func TestUsecaseGet(t *testing.T) {
@@ -111,8 +111,8 @@ func TestUsecaseCreate(t *testing.T) {
 				return &thrd, nil
 			}
 
-			ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
-			ctx = usr.SetUserIDToContext(ctx, "User#0")
+			ainfo := reqctx.NewAuthenticationInfo("Team#0", "User#0")
+			ctx := reqctx.NewRequestContext(context.Background(), ainfo)
 			repo := NewMockRepository(ctrl)
 			if c.useRepository {
 				repo.EXPECT().create(
@@ -154,7 +154,8 @@ func TestUsecase_Open(t *testing.T) {
 		id:     "thread",
 		closed: true,
 	}
-	ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
+	ainfo := reqctx.NewAuthenticationInfo("Team#0", "User#0")
+	ctx := reqctx.NewRequestContext(context.Background(), ainfo)
 	repo.EXPECT().find(ctx, repositoryFindRequest{
 		threadID: "thread",
 		teamID:   "Team#0",
@@ -185,7 +186,8 @@ func TestUsecase_OpenError(t *testing.T) {
 		id: "thread",
 	}
 	terr := errors.New("test")
-	ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
+	ainfo := reqctx.NewAuthenticationInfo("Team#0", "")
+	ctx := reqctx.NewRequestContext(context.Background(), ainfo)
 	repo.EXPECT().find(ctx, repositoryFindRequest{
 		threadID: "thread",
 		teamID:   "Team#0",
@@ -207,7 +209,8 @@ func TestUsecase_Close(t *testing.T) {
 		id:     "thread",
 		closed: false,
 	}
-	ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
+	ainfo := reqctx.NewAuthenticationInfo("Team#0", "")
+	ctx := reqctx.NewRequestContext(context.Background(), ainfo)
 	repo.EXPECT().find(ctx, repositoryFindRequest{
 		threadID: "thread",
 		teamID:   "Team#0",
@@ -236,7 +239,8 @@ func TestUsecase_CloseError(t *testing.T) {
 		id: "thread",
 	}
 	terr := errors.New("test")
-	ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
+	ainfo := reqctx.NewAuthenticationInfo("Team#0", "")
+	ctx := reqctx.NewRequestContext(context.Background(), ainfo)
 	repo.EXPECT().find(ctx, repositoryFindRequest{
 		threadID: "thread",
 		teamID:   "Team#0",

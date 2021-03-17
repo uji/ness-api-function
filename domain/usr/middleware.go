@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"firebase.google.com/go/auth"
+	"github.com/uji/ness-api-function/reqctx"
 )
 
 type MiddleWare struct {
@@ -54,23 +55,17 @@ func (m *MiddleWare) Handle(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := SetUserIDToContext(r.Context(), string(user.UserID()))
-		if user.OnCheckIn() {
-			ctx = SetTeamIDToContext(ctx, string(user.OnCheckInTeamID()))
-		}
-		r = r.WithContext(ctx)
-
-		next.ServeHTTP(w, r)
+		ainfo := reqctx.NewAuthenticationInfo(string(user.OnCheckInTeamID()), string(user.UserID()))
+		ctx := reqctx.NewRequestContext(r.Context(), ainfo)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 func DammyMiddleware(userID, teamID string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := SetUserIDToContext(r.Context(), userID)
-		ctx = SetTeamIDToContext(ctx, teamID)
-		r = r.WithContext(ctx)
-
-		next.ServeHTTP(w, r)
+		ainfo := reqctx.NewAuthenticationInfo(teamID, userID)
+		ctx := reqctx.NewRequestContext(context.Background(), ainfo)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

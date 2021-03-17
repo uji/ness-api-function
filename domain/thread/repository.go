@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/guregu/dynamo"
-	"github.com/uji/ness-api-function/domain/usr"
+	"github.com/uji/ness-api-function/reqctx"
 )
 
 type repository struct {
@@ -32,12 +32,12 @@ func NewDynamoRepository(
 
 func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Thread, error) {
 	var items []item
-	teamID, err := usr.GetTeamIDToContext(ctx)
+	ainfo, err := reqctx.GetAuthenticationInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	qr := d.tbl.Get("PK", teamID).Index("PK-CreatedAt-index").Order(false)
+	qr := d.tbl.Get("PK", ainfo.TeamID()).Index("PK-CreatedAt-index").Order(false)
 	if req.offsetTime.Valid {
 		qr = qr.Range("CreatedAt", dynamo.Less, req.offsetTime.Time)
 	}
@@ -62,12 +62,12 @@ func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Threa
 
 func (d *repository) find(ctx context.Context, req repositoryFindRequest) (Thread, error) {
 	var itm item
-	teamID, err := usr.GetTeamIDToContext(ctx)
+	ainfo, err := reqctx.GetAuthenticationInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := d.tbl.Get("PK", teamID).Range("SK", dynamo.Equal, req.threadID).One(&itm); err != nil {
+	if err := d.tbl.Get("PK", ainfo.TeamID()).Range("SK", dynamo.Equal, req.threadID).One(&itm); err != nil {
 		return nil, err
 	}
 	return itm.toThread(), nil

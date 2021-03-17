@@ -8,8 +8,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/guregu/dynamo"
 	"github.com/guregu/null"
-	"github.com/uji/ness-api-function/domain/usr"
 	"github.com/uji/ness-api-function/infra/db"
+	"github.com/uji/ness-api-function/reqctx"
 )
 
 func TestRepoGet(t *testing.T) {
@@ -186,7 +186,8 @@ func TestRepoGet(t *testing.T) {
 				}
 			}
 
-			ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
+			ainfo := reqctx.NewAuthenticationInfo("Team#0", "")
+			ctx := reqctx.NewRequestContext(context.Background(), ainfo)
 			res, err := sut.get(ctx, repositoryGetRequest{
 				offsetTime: c.offsetTime,
 				closed:     c.closed,
@@ -272,7 +273,8 @@ func TestRepo_find(t *testing.T) {
 				}
 			}
 
-			ctx := usr.SetTeamIDToContext(context.Background(), "Team#0")
+			ainfo := reqctx.NewAuthenticationInfo("Team#0", "")
+			ctx := reqctx.NewRequestContext(context.Background(), ainfo)
 			res, err := sut.find(ctx, c.req)
 			if err != c.err {
 				t.Fatal(err)

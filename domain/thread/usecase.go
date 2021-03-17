@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/guregu/null"
-	"github.com/uji/ness-api-function/domain/usr"
+	"github.com/uji/ness-api-function/reqctx"
 )
 
 type (
@@ -80,18 +80,14 @@ func (u *Usecase) Create(ctx context.Context, req CreateRequest) (Thread, error)
 	if req.Title == "" {
 		return nil, ErrorTitleIsRequired
 	}
-	uid, err := usr.GetUserIDToContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	tid, err := usr.GetTeamIDToContext(ctx)
+	ainfo, err := reqctx.GetAuthenticationInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
 	th, err := u.gen(threadAttribute{
 		Title:     req.Title,
-		TeamID:    TeamID(tid),
-		CreatorID: UserID(uid),
+		TeamID:    TeamID(ainfo.TeamID()),
+		CreatorID: UserID(ainfo.UserID()),
 	})
 	if err != nil {
 		return nil, err
@@ -105,12 +101,12 @@ func (u *Usecase) Create(ctx context.Context, req CreateRequest) (Thread, error)
 }
 
 func (u *Usecase) Open(ctx context.Context, req OpenRequest) (Thread, error) {
-	tid, err := usr.GetTeamIDToContext(ctx)
+	ainfo, err := reqctx.GetAuthenticationInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
 	th, err := u.repo.find(ctx, repositoryFindRequest{
-		teamID:   TeamID(tid),
+		teamID:   TeamID(ainfo.TeamID()),
 		threadID: req.ThreadID,
 	})
 	if err != nil {
@@ -126,12 +122,12 @@ func (u *Usecase) Open(ctx context.Context, req OpenRequest) (Thread, error) {
 }
 
 func (u *Usecase) Close(ctx context.Context, req CloseRequest) (Thread, error) {
-	tid, err := usr.GetTeamIDToContext(ctx)
+	ainfo, err := reqctx.GetAuthenticationInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
 	th, err := u.repo.find(ctx, repositoryFindRequest{
-		teamID:   TeamID(tid),
+		teamID:   TeamID(ainfo.TeamID()),
 		threadID: req.ThreadID,
 	})
 	if err != nil {

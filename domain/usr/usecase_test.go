@@ -8,6 +8,8 @@ import (
 	"firebase.google.com/go/auth"
 	"github.com/golang/mock/gomock"
 	"github.com/guregu/null"
+	"github.com/uji/ness-api-function/nesserr"
+	"github.com/uji/ness-api-function/reqctx"
 )
 
 func TestUsecase_Create(t *testing.T) {
@@ -32,12 +34,12 @@ func TestUsecase_Create(t *testing.T) {
 			repoCreateErr:   nil,
 		},
 		{
-			name:   "no userID",
+			name:   "has no AuthenticationInfo",
 			userID: null.String{},
 			req: CreateRequest{
 				Name: "name",
 			},
-			err:             ErrUnexpectedUserID,
+			err:             nesserr.ErrUnauthorized,
 			repoCreateCount: 0,
 			repoCreateErr:   nil,
 		},
@@ -61,7 +63,8 @@ func TestUsecase_Create(t *testing.T) {
 
 			ctx := context.Background()
 			if c.userID.Valid {
-				ctx = SetUserIDToContext(ctx, c.userID.String)
+				ainfo := reqctx.NewAuthenticationInfo("", c.userID.String)
+				ctx = reqctx.NewRequestContext(ctx, ainfo)
 			}
 
 			newUser := User{}

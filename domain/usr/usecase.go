@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"firebase.google.com/go/auth"
+	"github.com/uji/ness-api-function/reqctx"
 )
 
 type FireBaseAuthClient interface {
@@ -37,12 +38,12 @@ type (
 )
 
 func (u *Usecase) Create(ctx context.Context, req CreateRequest) (*User, error) {
-	userID, err := GetUserIDToContext(ctx)
+	ainfo, err := reqctx.GetAuthenticationInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
 	usr, err := u.gen(UserAttribute{
-		userID: userID,
+		userID: ainfo.UserID(),
 		name:   req.Name,
 	})
 	if err != nil {
