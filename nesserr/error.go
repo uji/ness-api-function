@@ -1,7 +1,7 @@
 package nesserr
 
-import "errors"
+import "golang.org/x/xerrors"
 
 var (
-	ErrUnauthorized = errors.New("Unauthorized")
+	ErrUnauthorized = xerrors.New("Unauthorized")
 )

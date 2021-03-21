@@ -2,7 +2,6 @@ package usr
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"strings"
 
@@ -30,13 +29,11 @@ func (m *MiddleWare) Handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := r.Header.Get("Authorization")
 		if h == "" {
-			log.Println("not found Bearer token")
 			next.ServeHTTP(w, r)
 			return
 		}
 
 		if !strings.HasPrefix(h, bearerPrefix) {
-			log.Println("not found Bearer prefix: ", h)
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -44,13 +41,11 @@ func (m *MiddleWare) Handle(next http.Handler) http.Handler {
 
 		uid, err := m.getUserIDFromCookie(r.Context(), tkn)
 		if err != nil {
-			log.Println("can not get userID", err)
 			next.ServeHTTP(w, r)
 			return
 		}
 		user, err := m.uc.Find(r.Context(), uid)
 		if err != nil {
-			log.Println("failed find user", err)
 			next.ServeHTTP(w, r)
 			return
 		}

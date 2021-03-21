@@ -11,6 +11,7 @@ import (
 	"github.com/uji/ness-api-function/graph/generated"
 	"github.com/uji/ness-api-function/infra/db"
 	"github.com/uji/ness-api-function/infra/fbs"
+	"github.com/uji/ness-api-function/infra/middleware"
 )
 
 func NewRegisterdServer() http.Handler {
@@ -28,7 +29,8 @@ func NewRegisterdServer() http.Handler {
 	rslv := graph.NewResolver(user, thrd)
 	schm := generated.NewExecutableSchema(generated.Config{Resolvers: rslv})
 	usrMdl := usr.NewMiddleWare(fbsauth, user)
-	return usrMdl.Handle(handler.NewDefaultServer(schm))
+	logMdl := middleware.NewLogging()
+	return usrMdl.Handle(logMdl.Handle(handler.NewDefaultServer(schm)))
 }
 
 func NewRegisterdServerWithDammyAuth(teamID, userID string) http.Handler {
@@ -42,5 +44,6 @@ func NewRegisterdServerWithDammyAuth(teamID, userID string) http.Handler {
 
 	rslv := graph.NewResolver(user, thrd)
 	schm := generated.NewExecutableSchema(generated.Config{Resolvers: rslv})
-	return usr.DammyMiddleware(userID, teamID, handler.NewDefaultServer(schm))
+	logMdl := middleware.NewLogging()
+	return usr.DammyMiddleware(userID, teamID, logMdl.Handle(handler.NewDefaultServer(schm)))
 }
