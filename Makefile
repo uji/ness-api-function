@@ -48,6 +48,10 @@ table:
 
 destroy-table:
 	docker-compose exec api go run ./tools/dbtool/ destroy
+
+health:
+	@echo "--elasticsearch--"
+	curl -X GET "localhost:9200/_cat/health?v&pretty"
 endif
 
 # commands for container shell or host without docker command
@@ -66,4 +70,8 @@ table:
 
 destroy-table:
 	go run ./tools/dbtool/ destroy
+
+health:
+	@echo "--elasticsearch--"
+	curl -X GET "http://elasticsearch:9200/_cat/health?v&pretty"
 endif
