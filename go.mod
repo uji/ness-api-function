@@ -12,6 +12,7 @@ require (
 	github.com/aws/aws-sdk-go v1.34.0
 	github.com/awslabs/aws-lambda-go-api-proxy v0.8.0
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
+	github.com/elastic/go-elasticsearch/v7 v7.12.0
 	github.com/golang/mock v1.4.4
 	github.com/google/go-cmp v0.5.2
 	github.com/google/uuid v1.1.2
