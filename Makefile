@@ -49,6 +49,7 @@ table:
 
 destroy-table:
 	docker-compose exec api go run ./tools/dbtool/ destroy
+	docker-compose exec api go run ./tools/elsch/ delete
 
 status:
 	@echo "--elasticsearch--"
@@ -72,6 +73,7 @@ table:
 
 destroy-table:
 	go run ./tools/dbtool/ destroy
+	go run ./tools/elsch/ delete
 
 status:
 	@echo "--elasticsearch--"

@@ -30,7 +30,15 @@ func main() {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, err.Error()+"\n")
 		}
-		if err := elsch.Migrate(clt); err != nil {
+		if err := elsch.CreateIndices(clt); err != nil {
+			fmt.Fprintf(os.Stderr, err.Error()+"\n")
+		}
+	case "delete":
+		clt, err := elsch.NewClient()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, err.Error()+"\n")
+		}
+		if err := elsch.DeleteIndices(clt); err != nil {
 			fmt.Fprintf(os.Stderr, err.Error()+"\n")
 		}
 	default:
