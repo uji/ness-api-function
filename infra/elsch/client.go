@@ -30,7 +30,7 @@ func NewClient() (*Client, error) {
 		CloudID:               "",
 		APIKey:                "",
 		Header:                map[string][]string{},
-		CACert:                []byte{},
+		CACert:                nil,
 		RetryOnStatus:         []int{},
 		DisableRetry:          false,
 		EnableRetryOnTimeout:  false,
@@ -50,6 +50,7 @@ func NewClient() (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &Client{
 		client: clt,
 	}, nil
