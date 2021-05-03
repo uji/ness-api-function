@@ -45,11 +45,12 @@ serve-with-auth:
 
 table:
 	docker-compose exec api go run ./tools/dbtool/ create
+	docker-compose exec api go run ./tools/elsch/ create
 
 destroy-table:
 	docker-compose exec api go run ./tools/dbtool/ destroy
 
-health:
+status:
 	@echo "--elasticsearch--"
 	curl -X GET "localhost:9200/_cat/health?v&pretty"
 endif
@@ -67,11 +68,14 @@ mock:
 
 table:
 	go run ./tools/dbtool/ create
+	go run ./tools/elsch/ create
 
 destroy-table:
 	go run ./tools/dbtool/ destroy
 
-health:
+status:
 	@echo "--elasticsearch--"
-	curl -X GET "http://elasticsearch:9200/_cat/health?v&pretty"
+	@curl -X GET "http://elasticsearch:9200/_cat/health?v&pretty"
+	@echo "--elasticsearch indices--"
+	@curl -X GET "http://elasticsearch:9200/_cat/indices?v&pretty"
 endif
