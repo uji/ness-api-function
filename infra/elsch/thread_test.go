@@ -132,3 +132,42 @@ func TestPutThread(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteThread(t *testing.T) {
+	t.Parallel()
+
+	id := uuid.New()
+
+	clt, err := NewClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := context.Background()
+
+	// create test data
+	_, err = esapi.IndexRequest{
+		Index:      threadIndexName,
+		DocumentID: id.String(),
+		Body:       nil,
+	}.Do(ctx, clt.client)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := clt.DeleteThread(ctx, id.String()); err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := esapi.GetRequest{
+		Index:      threadIndexName,
+		DocumentID: id.String(),
+	}.Do(ctx, clt.client)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if res.StatusCode != 404 {
+		t.Fatal(res)
+	}
+}

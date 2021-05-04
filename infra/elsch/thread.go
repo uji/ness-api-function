@@ -37,3 +37,12 @@ func (c *Client) PutThread(ctx context.Context, req PutThreadRequest) error {
 	}.Do(ctx, c.client)
 	return err
 }
+
+func (c *Client) DeleteThread(ctx context.Context, threadID string) error {
+	_, err := esapi.DeleteRequest{
+		Index:      threadIndexName,
+		DocumentID: threadID,
+		Refresh:    "true",
+	}.Do(ctx, c.client)
+	return err
+}
