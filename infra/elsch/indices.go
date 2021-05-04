@@ -2,14 +2,13 @@ package elsch
 
 import (
 	"context"
-	"log"
 
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 )
 
 func CreateIndices(client *Client) error {
 	req := esapi.IndicesCreateRequest{
-		Index:               "thread",
+		Index:               threadIndexName,
 		Body:                nil,
 		IncludeTypeName:     new(bool),
 		MasterTimeout:       0,
@@ -21,17 +20,16 @@ func CreateIndices(client *Client) error {
 		FilterPath:          []string{},
 		Header:              map[string][]string{},
 	}
-	res, err := req.Do(context.Background(), client.client)
+	_, err := req.Do(context.Background(), client.client)
 	if err != nil {
 		panic(err)
 	}
-	log.Println(res)
 	return err
 }
 
 func DeleteIndices(client *Client) error {
 	req := esapi.IndicesDeleteRequest{
-		Index:             []string{"thread"},
+		Index:             []string{threadIndexName},
 		AllowNoIndices:    new(bool),
 		ExpandWildcards:   "",
 		IgnoreUnavailable: new(bool),
@@ -43,10 +41,9 @@ func DeleteIndices(client *Client) error {
 		FilterPath:        []string{},
 		Header:            map[string][]string{},
 	}
-	res, err := req.Do(context.Background(), client.client)
+	_, err := req.Do(context.Background(), client.client)
 	if err != nil {
 		panic(err)
 	}
-	log.Println(res)
 	return err
 }

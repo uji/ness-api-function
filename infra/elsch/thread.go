@@ -9,6 +9,10 @@ import (
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 )
 
+var (
+	threadIndexName = "thread"
+)
+
 type PutThreadRequest struct {
 	ID        string    `json:"id"`
 	TeamID    string    `json:"teamID"`
@@ -26,7 +30,7 @@ func (c *Client) PutThread(ctx context.Context, req PutThreadRequest) error {
 	}
 
 	_, err = esapi.IndexRequest{
-		Index:      "thread",
+		Index:      threadIndexName,
 		DocumentID: req.ID,
 		Body:       strings.NewReader(string(bytes)),
 		Refresh:    "true",
