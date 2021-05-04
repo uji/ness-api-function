@@ -13,7 +13,6 @@ type Client struct {
 func NewClient() (*Client, error) {
 	addresses := []string{
 		"http://elasticsearch:9200",
-		"http://elasticsearch:9300",
 	}
 
 	adrs1 := os.Getenv("ELASTICSEARCH_ADDRESS_1")
