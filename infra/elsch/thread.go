@@ -10,10 +10,7 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/uji/ness-api-function/domain/thread"
-)
-
-var (
-	threadIndexName = "thread"
+	"github.com/uji/ness-api-function/reqctx"
 )
 
 type putThreadRequest struct {
@@ -42,7 +39,7 @@ func (c *Client) PutThread(ctx context.Context, thread thread.Thread) error {
 	}
 
 	_, err = esapi.IndexRequest{
-		Index:      threadIndexName,
+		Index:      string(c.threadIndexName),
 		DocumentID: req.ID,
 		Body:       strings.NewReader(string(bytes)),
 		Refresh:    "true",
@@ -52,7 +49,7 @@ func (c *Client) PutThread(ctx context.Context, thread thread.Thread) error {
 
 func (c *Client) DeleteThread(ctx context.Context, threadID string) error {
 	_, err := esapi.DeleteRequest{
-		Index:      threadIndexName,
+		Index:      string(c.threadIndexName),
 		DocumentID: threadID,
 		Refresh:    "true",
 	}.Do(ctx, c.client)
@@ -68,9 +65,16 @@ type GetThreadsOptions interface {
 }
 
 func (c *Client) GetThreadIDs(ctx context.Context, req GetThreadsRequest, opts ...GetThreadsOptions) ([]string, error) {
+	ainfo, err := reqctx.GetAuthenticationInfo(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
-			"match_all": map[string]interface{}{},
+			"match": map[string]interface{}{
+				"teamID": ainfo.TeamID(),
+			},
 		},
 	}
 
@@ -80,7 +84,7 @@ func (c *Client) GetThreadIDs(ctx context.Context, req GetThreadsRequest, opts .
 	}
 
 	res, err := esapi.SearchRequest{
-		Index: []string{threadIndexName},
+		Index: []string{string(c.threadIndexName)},
 		From:  &req.From,
 		Body:  &buf,
 		Size:  &req.Size,

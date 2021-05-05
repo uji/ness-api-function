@@ -8,7 +8,7 @@ import (
 
 func CreateIndices(client *Client) error {
 	req := esapi.IndicesCreateRequest{
-		Index:               threadIndexName,
+		Index:               string(client.threadIndexName),
 		Body:                nil,
 		IncludeTypeName:     new(bool),
 		MasterTimeout:       0,
@@ -29,7 +29,7 @@ func CreateIndices(client *Client) error {
 
 func DeleteIndices(client *Client) error {
 	req := esapi.IndicesDeleteRequest{
-		Index:             []string{threadIndexName},
+		Index:             []string{string(client.threadIndexName)},
 		AllowNoIndices:    new(bool),
 		ExpandWildcards:   "",
 		IgnoreUnavailable: new(bool),

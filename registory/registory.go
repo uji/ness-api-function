@@ -21,7 +21,7 @@ func NewRegisterdServer() http.Handler {
 	if err != nil {
 		panic(err)
 	}
-	es, err := elsch.NewClient()
+	es, err := elsch.NewClient(elsch.ThreadIndexName)
 	if err != nil {
 		panic(err)
 	}
@@ -41,7 +41,7 @@ func NewRegisterdServer() http.Handler {
 func NewRegisterdServerWithDammyAuth(teamID, userID string) http.Handler {
 	dnmdb := db.NewDynamoDB()
 	fbsauth := &usr.DammyFireBaseAuthClient{}
-	es, err := elsch.NewClient()
+	es, err := elsch.NewClient(elsch.ThreadIndexName)
 	if err != nil {
 		panic(err)
 	}

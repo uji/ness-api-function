@@ -26,7 +26,7 @@ func main() {
 	arg := flag.Arg(0)
 	switch arg {
 	case "create":
-		clt, err := elsch.NewClient()
+		clt, err := elsch.NewClient(elsch.ThreadIndexName)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, err.Error()+"\n")
 		}
@@ -34,7 +34,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, err.Error()+"\n")
 		}
 	case "delete":
-		clt, err := elsch.NewClient()
+		clt, err := elsch.NewClient(elsch.ThreadIndexName)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, err.Error()+"\n")
 		}

@@ -7,10 +7,17 @@ import (
 )
 
 type Client struct {
-	client *elasticsearch.Client
+	client          *elasticsearch.Client
+	threadIndexName IndexName
 }
 
-func NewClient() (*Client, error) {
+type IndexName string
+
+const (
+	ThreadIndexName IndexName = "thread"
+)
+
+func NewClient(threadIndexName IndexName) (*Client, error) {
 	addresses := []string{
 		"http://elasticsearch:9200",
 	}
@@ -57,6 +64,7 @@ func NewClient() (*Client, error) {
 	}
 
 	return &Client{
-		client: clt,
+		client:          clt,
+		threadIndexName: threadIndexName,
 	}, nil
 }

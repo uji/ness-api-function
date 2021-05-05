@@ -13,6 +13,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"github.com/uji/ness-api-function/domain/thread"
+	"github.com/uji/ness-api-function/reqctx"
 )
 
 func TestPutThread(t *testing.T) {
@@ -110,10 +111,12 @@ func TestPutThread(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			clt, err := NewClient()
+			clt, err := NewClient(IndexName(uuid.New().String()))
 			if err != nil {
 				t.Fatal(err)
 			}
+			CreateIndexForTest(t, clt)
+			defer DeleteIndexForTest(t, clt)
 
 			ctx := context.Background()
 			for _, r := range c.reqs {
@@ -131,7 +134,7 @@ func TestPutThread(t *testing.T) {
 			}
 
 			res, err := esapi.GetRequest{
-				Index:      threadIndexName,
+				Index:      string(clt.threadIndexName),
 				DocumentID: id.String(),
 			}.Do(ctx, clt.client)
 			if err != nil {
@@ -162,16 +165,18 @@ func TestDeleteThread(t *testing.T) {
 
 	id := uuid.New()
 
-	clt, err := NewClient()
+	clt, err := NewClient(IndexName(uuid.New().String()))
 	if err != nil {
 		t.Fatal(err)
 	}
+	CreateIndexForTest(t, clt)
+	defer DeleteIndexForTest(t, clt)
 
 	ctx := context.Background()
 
 	// create test data
 	_, err = esapi.IndexRequest{
-		Index:      threadIndexName,
+		Index:      string(clt.threadIndexName),
 		DocumentID: id.String(),
 		Body:       nil,
 	}.Do(ctx, clt.client)
@@ -184,7 +189,7 @@ func TestDeleteThread(t *testing.T) {
 	}
 
 	res, err := esapi.GetRequest{
-		Index:      threadIndexName,
+		Index:      string(clt.threadIndexName),
 		DocumentID: id.String(),
 	}.Do(ctx, clt.client)
 	if err != nil {
@@ -208,10 +213,11 @@ func TestGetThreads(t *testing.T) {
 	}
 
 	id1 := uuid.New().String()
-	// id2 := uuid.New()
-	// id2 := uuid.New()
-	tid1 := uuid.New().String()
-	uid1 := uuid.New().String()
+	id2 := uuid.New().String()
+	myTeamID := uuid.New().String()
+	tid2 := uuid.New().String()
+	myUserID := uuid.New().String()
+	uid2 := uuid.New().String()
 
 	cases := []struct {
 		name string
@@ -224,9 +230,65 @@ func TestGetThreads(t *testing.T) {
 			data: []thread{
 				{
 					ID:        id1,
-					TeamID:    tid1,
-					CreatorID: uid1,
+					TeamID:    myTeamID,
+					CreatorID: myUserID,
 					Title:     "test",
+					Closed:    true,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+			},
+			req: GetThreadsRequest{
+				Size: 10,
+				From: 0,
+			},
+			res: []string{id1},
+		},
+		{
+			name: "include other users thread",
+			data: []thread{
+				{
+					ID:        id1,
+					TeamID:    myTeamID,
+					CreatorID: myUserID,
+					Title:     "test1",
+					Closed:    true,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+				{
+					ID:        id2,
+					TeamID:    myTeamID,
+					CreatorID: uid2,
+					Title:     "test2",
+					Closed:    true,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+			},
+			req: GetThreadsRequest{
+				Size: 10,
+				From: 0,
+			},
+			res: []string{id1, id2},
+		},
+		{
+			name: "include other teams thread",
+			data: []thread{
+				{
+					ID:        id1,
+					TeamID:    myTeamID,
+					CreatorID: myUserID,
+					Title:     "test1",
+					Closed:    true,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+				{
+					ID:        id2,
+					TeamID:    tid2,
+					CreatorID: uid2,
+					Title:     "test2",
 					Closed:    true,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
@@ -252,14 +314,17 @@ func TestGetThreads(t *testing.T) {
 	for _, c := range cases {
 		c := c
 		t.Run(c.name, func(t *testing.T) {
-			t.Parallel()
-
-			clt, err := NewClient()
+			clt, err := NewClient(IndexName(uuid.New().String()))
 			if err != nil {
 				t.Fatal(err)
 			}
+			CreateIndexForTest(t, clt)
+			defer DeleteIndexForTest(t, clt)
 
-			ctx := context.Background()
+			ctx := reqctx.NewRequestContext(
+				context.Background(),
+				reqctx.NewAuthenticationInfo(myTeamID, myUserID),
+			)
 
 			// create test data
 			for _, d := range c.data {
@@ -269,7 +334,7 @@ func TestGetThreads(t *testing.T) {
 				}
 
 				_, err = esapi.IndexRequest{
-					Index:      threadIndexName,
+					Index:      string(clt.threadIndexName),
 					DocumentID: d.ID,
 					Body:       strings.NewReader(string(bytes)),
 					Refresh:    "true",
