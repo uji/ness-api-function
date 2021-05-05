@@ -54,6 +54,8 @@ destroy-table:
 status:
 	@echo "--elasticsearch--"
 	curl -X GET "localhost:9200/_cat/health?v&pretty"
+	@echo "--elasticsearch indices--"
+	@curl -X GET "localhost:9200/_cat/indices?v&pretty"
 endif
 
 # commands for container shell or host without docker command
