@@ -7,13 +7,14 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/uji/ness-api-function/domain/thread"
 )
 
 var (
 	threadIndexName = "thread"
 )
 
-type PutThreadRequest struct {
+type putThreadRequest struct {
 	ID        string    `json:"id"`
 	TeamID    string    `json:"teamID"`
 	CreatorID string    `json:"creatorID"`
@@ -23,7 +24,16 @@ type PutThreadRequest struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-func (c *Client) PutThread(ctx context.Context, req PutThreadRequest) error {
+func (c *Client) PutThread(ctx context.Context, thread thread.Thread) error {
+	req := putThreadRequest{
+		ID:        thread.ID(),
+		TeamID:    string(thread.TeamID()),
+		CreatorID: string(thread.CreatorID()),
+		Title:     thread.Title(),
+		Closed:    thread.Closed(),
+		CreatedAt: thread.CreatedAt(),
+		UpdatedAt: thread.UpdatedAt(),
+	}
 	bytes, err := json.Marshal(req)
 	if err != nil {
 		return err
