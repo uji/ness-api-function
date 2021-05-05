@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	"github.com/guregu/dynamo"
 	"github.com/guregu/null"
@@ -174,11 +175,16 @@ func TestRepoGet(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+
 			dnmdb := db.NewDynamoDB()
 			tbl := db.CreateThreadTestTable(dnmdb, t)
 			defer db.DestroyTestTable(&tbl, t)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-			sut := NewDynamoRepository(dnmdb, tbl.Name())
+			es := NewMockelasticsearch(ctrl)
+			sut := NewDynamoRepository(dnmdb, tbl.Name(), es)
 
 			for _, d := range c.items {
 				if err := tbl.Put(d).Run(); err != nil {
@@ -264,8 +270,11 @@ func TestRepo_find(t *testing.T) {
 			dnmdb := db.NewDynamoDB()
 			tbl := db.CreateThreadTestTable(dnmdb, t)
 			defer db.DestroyTestTable(&tbl, t)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-			sut := NewDynamoRepository(dnmdb, tbl.Name())
+			es := NewMockelasticsearch(ctrl)
+			sut := NewDynamoRepository(dnmdb, tbl.Name(), es)
 
 			for _, d := range c.items {
 				if err := tbl.Put(d).Run(); err != nil {
@@ -292,8 +301,11 @@ func TestRepoCreate(t *testing.T) {
 	dnmdb := db.NewDynamoDB()
 	tbl := db.CreateThreadTestTable(dnmdb, t)
 	defer db.DestroyTestTable(&tbl, t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	sut := NewDynamoRepository(dnmdb, tbl.Name())
+	es := NewMockelasticsearch(ctrl)
+	sut := NewDynamoRepository(dnmdb, tbl.Name(), es)
 
 	thrd := thread{
 		id:        "Thread#0",
@@ -304,8 +316,12 @@ func TestRepoCreate(t *testing.T) {
 		createdAt: time.Now(),
 		updatedAt: time.Now(),
 	}
+
+	ctx := context.Background()
+	es.EXPECT().PutThread(ctx, &thrd).Return(nil)
+
 	if err := sut.create(
-		context.Background(),
+		ctx,
 		repositoryCreateRequest{
 			thread: &thrd,
 		},
@@ -323,121 +339,116 @@ func TestRepoCreate(t *testing.T) {
 	}
 }
 
-func testRepo_update(
-	t *testing.T,
-	items []item,
-	req repositoryUpdateRequest,
-	errMsg string,
-) {
-	dnmdb := db.NewDynamoDB()
-	tbl := db.CreateThreadTestTable(dnmdb, t)
-	defer db.DestroyTestTable(&tbl, t)
-
-	sut := NewDynamoRepository(dnmdb, tbl.Name())
-
-	for _, itm := range items {
-		if err := tbl.Put(itm).Run(); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	err := sut.update(
-		context.Background(),
-		req,
-	)
-	if errMsg == "" {
-		if err != nil {
-			t.Fatal(err)
-		}
-	} else {
-		if err.Error() != errMsg {
-			t.Fatal(err)
-		}
-		return
-	}
-
-	var itm item
-	if err := tbl.Get("PK", req.thread.TeamID()).Range("SK", dynamo.Equal, req.thread.ID()).One(&itm); err != nil {
-		t.Fatal(err)
-	}
-	opt := cmp.AllowUnexported(thread{})
-	if diff := cmp.Diff(req.thread, itm.toThread(), opt); diff != "" {
-		t.Fatal(diff)
-	}
-}
-
 func TestRepo_update(t *testing.T) {
-	cases := []struct {
-		name   string
-		items  []item
-		req    repositoryUpdateRequest
-		errMsg string
-	}{
-		{
-			name: "normal",
-			items: []item{
-				{
-					PK:        "Team#0",
-					SK:        "Thread#0",
-					CreatorID: "User#0",
-					Content:   "thread0",
-					Closed:    "false",
-					CreatedAt: time.Date(2020, 10, 2, 0, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2020, 10, 2, 0, 0, 0, 0, time.UTC),
+	t.Run("normal", func(t *testing.T) {
+		cases := []struct {
+			name  string
+			items []item
+			req   repositoryUpdateRequest
+		}{
+			{
+				name: "1",
+				items: []item{
+					{
+						PK:        "Team#0",
+						SK:        "Thread#0",
+						CreatorID: "User#0",
+						Content:   "thread0",
+						Closed:    "false",
+						CreatedAt: time.Date(2020, 10, 2, 0, 0, 0, 0, time.UTC),
+						UpdatedAt: time.Date(2020, 10, 2, 0, 0, 0, 0, time.UTC),
+					},
+					{
+						PK:        "Team#0",
+						SK:        "Thread#1",
+						CreatorID: "User#1",
+						Content:   "thread1",
+						Closed:    "true",
+						CreatedAt: time.Date(2020, 10, 3, 0, 0, 0, 0, time.UTC),
+						UpdatedAt: time.Date(2020, 10, 3, 12, 0, 0, 0, time.UTC),
+					},
 				},
-				{
-					PK:        "Team#0",
-					SK:        "Thread#1",
-					CreatorID: "User#1",
-					Content:   "thread1",
-					Closed:    "true",
-					CreatedAt: time.Date(2020, 10, 3, 0, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2020, 10, 3, 12, 0, 0, 0, time.UTC),
-				},
-			},
-			req: repositoryUpdateRequest{
-				thread: &thread{
-					id:        "Thread#0",
-					title:     "thread0",
-					teamID:    "Team#0",
-					createrID: "User#0",
-					closed:    true,
-					createdAt: time.Date(2020, 10, 2, 0, 0, 0, 0, time.UTC),
-					updatedAt: time.Date(2020, 10, 2, 12, 0, 0, 0, time.UTC),
-				},
-			},
-		},
-		{
-			name: "dont create when not found",
-			items: []item{
-				{
-					PK:        "Team#0",
-					SK:        "Thread#1",
-					CreatorID: "User#1",
-					Content:   "thread1",
-					Closed:    "true",
-					CreatedAt: time.Date(2020, 10, 3, 0, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2020, 10, 3, 12, 0, 0, 0, time.UTC),
+				req: repositoryUpdateRequest{
+					thread: &thread{
+						id:        "Thread#0",
+						title:     "thread0",
+						teamID:    "Team#0",
+						createrID: "User#0",
+						closed:    true,
+						createdAt: time.Date(2020, 10, 2, 0, 0, 0, 0, time.UTC),
+						updatedAt: time.Date(2020, 10, 2, 12, 0, 0, 0, time.UTC),
+					},
 				},
 			},
-			req: repositoryUpdateRequest{
-				thread: &thread{
-					id:        "Thread#0",
-					title:     "thread0",
-					teamID:    "Team#0",
-					createrID: "User#0",
-					closed:    true,
-					createdAt: time.Date(2020, 10, 2, 0, 0, 0, 0, time.UTC),
-					updatedAt: time.Date(2020, 10, 2, 12, 0, 0, 0, time.UTC),
-				},
-			},
-			errMsg: "ConditionalCheckFailedException: The conditional request failed",
-		},
-	}
+		}
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			testRepo_update(t, c.items, c.req, c.errMsg)
-		})
-	}
+		for _, c := range cases {
+			t.Run(c.name, func(t *testing.T) {
+				dnmdb := db.NewDynamoDB()
+				tbl := db.CreateThreadTestTable(dnmdb, t)
+				defer db.DestroyTestTable(&tbl, t)
+				ctrl := gomock.NewController(t)
+				defer ctrl.Finish()
+
+				es := NewMockelasticsearch(ctrl)
+				sut := NewDynamoRepository(dnmdb, tbl.Name(), es)
+
+				for _, itm := range c.items {
+					if err := tbl.Put(itm).Run(); err != nil {
+						t.Fatal(err)
+					}
+				}
+
+				ctx := context.Background()
+				es.EXPECT().PutThread(ctx, c.req.thread)
+
+				err := sut.update(
+					ctx,
+					c.req,
+				)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				var itm item
+				if err := tbl.Get("PK", c.req.thread.TeamID()).Range("SK", dynamo.Equal, c.req.thread.ID()).One(&itm); err != nil {
+					t.Fatal(err)
+				}
+				opt := cmp.AllowUnexported(thread{})
+				if diff := cmp.Diff(c.req.thread, itm.toThread(), opt); diff != "" {
+					t.Fatal(diff)
+				}
+			})
+		}
+	})
+
+	t.Run("dont create when not found", func(t *testing.T) {
+		dnmdb := db.NewDynamoDB()
+		tbl := db.CreateThreadTestTable(dnmdb, t)
+		defer db.DestroyTestTable(&tbl, t)
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		es := NewMockelasticsearch(ctrl)
+		sut := NewDynamoRepository(dnmdb, tbl.Name(), es)
+
+		ctx := context.Background()
+		err := sut.update(
+			ctx,
+			repositoryUpdateRequest{
+				thread: &thread{
+					id:        "Thread#999",
+					teamID:    "Team#999",
+					createrID: "User#999",
+					title:     "Title",
+					closed:    true,
+					createdAt: time.Now(),
+					updatedAt: time.Now(),
+				},
+			},
+		)
+		if err.Error() != "ConditionalCheckFailedException: The conditional request failed" {
+			t.Fatal(err)
+		}
+	})
 }

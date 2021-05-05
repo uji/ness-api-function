@@ -1,3 +1,4 @@
+//go:generate mockgen -source=$GOFILE -destination=mock_$GOFILE -package=$GOPACKAGE
 package thread
 
 import (
@@ -14,6 +15,11 @@ import (
 type repository struct {
 	db  *dynamo.DB
 	tbl *dynamo.Table
+	es  elasticsearch
+}
+
+type elasticsearch interface {
+	PutThread(context.Context, Thread) error
 }
 
 var _ Repository = &repository{}
@@ -25,9 +31,10 @@ func repositoryError(err error) error {
 func NewDynamoRepository(
 	db *dynamo.DB,
 	tableName string,
+	es elasticsearch,
 ) *repository {
 	tbl := db.Table(tableName)
-	return &repository{db, &tbl}
+	return &repository{db, &tbl, es}
 }
 
 func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Thread, error) {
@@ -89,12 +96,15 @@ func (d *repository) create(ctx context.Context, req repositoryCreateRequest) er
 		}
 	}
 
-	return nil
+	return d.es.PutThread(ctx, req.thread)
 }
 
 func (d *repository) update(ctx context.Context, req repositoryUpdateRequest) error {
 	condition := "attribute_exists(PK) AND attribute_exists(SK)"
-	return d.tbl.Put(newItem(req.thread)).If(condition).Run()
+	if err := d.tbl.Put(newItem(req.thread)).If(condition).Run(); err != nil {
+		return err
+	}
+	return d.es.PutThread(ctx, req.thread)
 }
 
 type item struct {

@@ -107,6 +107,7 @@ func TestPutThread(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
 			clt, err := NewClient()
 			if err != nil {
