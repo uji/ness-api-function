@@ -1,8 +1,10 @@
 package elsch
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io/ioutil"
 	"strings"
 	"time"
 
@@ -55,4 +57,58 @@ func (c *Client) DeleteThread(ctx context.Context, threadID string) error {
 		Refresh:    "true",
 	}.Do(ctx, c.client)
 	return err
+}
+
+type GetThreadsRequest struct {
+	Size int
+	From int
+}
+
+type GetThreadsOptions interface {
+}
+
+func (c *Client) GetThreadIDs(ctx context.Context, req GetThreadsRequest, opts ...GetThreadsOptions) ([]string, error) {
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"match_all": map[string]interface{}{},
+		},
+	}
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(query); err != nil {
+		return nil, err
+	}
+
+	res, err := esapi.SearchRequest{
+		Index: []string{threadIndexName},
+		From:  &req.From,
+		Body:  &buf,
+		Size:  &req.Size,
+	}.Do(ctx, c.client)
+	if err != nil {
+		return nil, err
+	}
+
+	bytes, err := ioutil.ReadAll(res.Body) // TODO: use io.ReadAll
+	if err != nil {
+		return nil, err
+	}
+
+	rslt := new(struct {
+		Hits struct {
+			Hits []struct {
+				ID string `json:"_id"`
+			} `json:"hits"`
+		} `json:"hits"`
+	})
+
+	if err := json.Unmarshal(bytes, rslt); err != nil {
+		return nil, err
+	}
+
+	ids := make([]string, len(rslt.Hits.Hits))
+	for i, h := range rslt.Hits.Hits {
+		ids[i] = h.ID
+	}
+	return ids, nil
 }

@@ -22,6 +22,12 @@ func NewClient() (*Client, error) {
 		addresses = []string{adrs1, adrs2}
 	}
 
+	// logger := &estransport.ColorLogger{
+	// 	Output:             os.Stdout,
+	// 	EnableRequestBody:  true,
+	// 	EnableResponseBody: true,
+	// }
+
 	cfg := elasticsearch.Config{
 		Addresses:             addresses,
 		Username:              os.Getenv("ELASTICSEARCH_USERNAME"),

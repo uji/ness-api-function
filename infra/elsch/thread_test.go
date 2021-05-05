@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
+	"strings"
 	"testing"
 	"time"
 
@@ -192,5 +193,100 @@ func TestDeleteThread(t *testing.T) {
 
 	if res.StatusCode != 404 {
 		t.Fatal(res)
+	}
+}
+
+func TestGetThreads(t *testing.T) {
+	type thread struct {
+		ID        string    `json:"id"`
+		TeamID    string    `json:"teamID"`
+		CreatorID string    `json:"creatorID"`
+		Title     string    `json:"title"`
+		Closed    bool      `json:"closed"`
+		CreatedAt time.Time `json:"createdAt"`
+		UpdatedAt time.Time `json:"updatedAt"`
+	}
+
+	id1 := uuid.New().String()
+	// id2 := uuid.New()
+	// id2 := uuid.New()
+	tid1 := uuid.New().String()
+	uid1 := uuid.New().String()
+
+	cases := []struct {
+		name string
+		data []thread
+		req  GetThreadsRequest
+		res  []string
+	}{
+		{
+			name: "normal",
+			data: []thread{
+				{
+					ID:        id1,
+					TeamID:    tid1,
+					CreatorID: uid1,
+					Title:     "test",
+					Closed:    true,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+			},
+			req: GetThreadsRequest{
+				Size: 10,
+				From: 0,
+			},
+			res: []string{id1},
+		},
+		{
+			name: "no data",
+			data: []thread{},
+			req: GetThreadsRequest{
+				Size: 10,
+				From: 0,
+			},
+			res: []string{},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+
+			clt, err := NewClient()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			ctx := context.Background()
+
+			// create test data
+			for _, d := range c.data {
+				bytes, err := json.Marshal(d)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				_, err = esapi.IndexRequest{
+					Index:      threadIndexName,
+					DocumentID: d.ID,
+					Body:       strings.NewReader(string(bytes)),
+					Refresh:    "true",
+				}.Do(ctx, clt.client)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			res, err := clt.GetThreadIDs(ctx, c.req)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(c.res, res); diff != "" {
+				t.Fatal(diff)
+			}
+		})
 	}
 }
