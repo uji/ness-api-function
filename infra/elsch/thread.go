@@ -59,6 +59,7 @@ func (c *Client) DeleteThread(ctx context.Context, threadID string) error {
 type GetThreadsRequest struct {
 	Size int
 	From int
+	Word string
 }
 
 type GetThreadsOptions interface {
@@ -70,10 +71,25 @@ func (c *Client) GetThreadIDs(ctx context.Context, req GetThreadsRequest, opts .
 		return nil, err
 	}
 
+	must := make([]map[string]interface{}, 0, 2)
+	must = append(must, map[string]interface{}{
+		"match_phrase": map[string]string{
+			"teamID": ainfo.TeamID(),
+		},
+	})
+
+	if req.Word != "" {
+		must = append(must, map[string]interface{}{
+			"match": map[string]string{
+				"title": req.Word,
+			},
+		})
+	}
+
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
-			"match": map[string]interface{}{
-				"teamID": ainfo.TeamID(),
+			"bool": map[string]interface{}{
+				"must": must,
 			},
 		},
 	}

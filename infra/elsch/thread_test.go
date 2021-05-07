@@ -214,6 +214,7 @@ func TestGetThreads(t *testing.T) {
 
 	id1 := uuid.New().String()
 	id2 := uuid.New().String()
+	id3 := uuid.New().String()
 	myTeamID := uuid.New().String()
 	tid2 := uuid.New().String()
 	myUserID := uuid.New().String()
@@ -243,6 +244,72 @@ func TestGetThreads(t *testing.T) {
 				From: 0,
 			},
 			res: []string{id1},
+		},
+		{
+			name: "specify word",
+			data: []thread{
+				{
+					ID:        id1,
+					TeamID:    myTeamID,
+					CreatorID: myUserID,
+					Title:     "test",
+					Closed:    true,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+				{
+					ID:        id2,
+					TeamID:    myTeamID,
+					CreatorID: myUserID,
+					Title:     "test thread",
+					Closed:    true,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+				{
+					ID:        id3,
+					TeamID:    myTeamID,
+					CreatorID: myUserID,
+					Title:     "xxx",
+					Closed:    true,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+			},
+			req: GetThreadsRequest{
+				Size: 10,
+				From: 0,
+				Word: "test",
+			},
+			res: []string{id1, id2},
+		},
+		{
+			name: "size is smaller than total",
+			data: []thread{
+				{
+					ID:        id1,
+					TeamID:    myTeamID,
+					CreatorID: myUserID,
+					Title:     "test1",
+					Closed:    true,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+				{
+					ID:        id2,
+					TeamID:    myTeamID,
+					CreatorID: myUserID,
+					Title:     "test2",
+					Closed:    false,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+			},
+			req: GetThreadsRequest{
+				Size: 1,
+				From: 1,
+			},
+			res: []string{id2},
 		},
 		{
 			name: "include other users thread",
