@@ -12,6 +12,9 @@ type (
 	repositoryGetRequest struct {
 		offsetTime null.Time
 		closed     null.Bool
+		size       int
+		from       int
+		word       string
 	}
 
 	repositoryFindRequest struct {

@@ -56,59 +56,11 @@ func (c *Client) DeleteThread(ctx context.Context, threadID string) error {
 	return err
 }
 
-type GetThreadsRequest struct {
-	Size int
-	From int
-	Word string
-}
-
-type boolQueryType string
-
-const (
-	boolQueryMust boolQueryType = "must"
-)
-
-type GetThreadsOptions interface {
-	generateQuery() map[string]interface{}
-	boolQueryType() boolQueryType
-}
-
-type getThreadsOptions struct {
-	boolQuery boolQueryType
-	query     string
-	key       string
-	value     interface{}
-}
-
-func (g getThreadsOptions) generateQuery() map[string]interface{} {
-	return map[string]interface{}{
-		g.query: map[string]interface{}{
-			g.key: g.value,
-		},
-	}
-}
-
-func (g getThreadsOptions) boolQueryType() boolQueryType {
-	return g.boolQuery
-}
-
-var (
-	GetThreadsOptionsOpenedOnly = getThreadsOptions{
-		boolQuery: boolQueryMust,
-		query:     "match_phrase",
-		key:       "closed",
-		value:     false,
-	}
-
-	GetThreadsOptionsClosedOnly = getThreadsOptions{
-		boolQuery: boolQueryMust,
-		query:     "match_phrase",
-		key:       "closed",
-		value:     true,
-	}
-)
-
-func (c *Client) GetThreadIDs(ctx context.Context, req GetThreadsRequest, opts ...GetThreadsOptions) ([]string, error) {
+func (c *Client) GetThreadIDs(
+	ctx context.Context,
+	req thread.SearchThreadIDsRequest,
+	opts ...thread.SearchThreadIDsOption,
+) ([]string, error) {
 	ainfo, err := reqctx.GetAuthenticationInfo(ctx)
 	if err != nil {
 		return nil, err
@@ -130,11 +82,19 @@ func (c *Client) GetThreadIDs(ctx context.Context, req GetThreadsRequest, opts .
 	}
 
 	for _, opt := range opts {
-		q := opt.generateQuery()
-		switch opt.boolQueryType() {
-		case boolQueryMust:
-			must = append(must, q)
-		default:
+		switch opt {
+		case thread.SearchThreadIDsOptionOnlyClosed:
+			must = append(must, map[string]interface{}{
+				"match_phrase": map[string]bool{
+					"closed": true,
+				},
+			})
+		case thread.SearchThreadIDsOptionOnlyOpened:
+			must = append(must, map[string]interface{}{
+				"match_phrase": map[string]bool{
+					"closed": false,
+				},
+			})
 		}
 	}
 

@@ -202,7 +202,7 @@ func TestDeleteThread(t *testing.T) {
 }
 
 func TestGetThreads(t *testing.T) {
-	type thread struct {
+	type threadSchema struct {
 		ID        string    `json:"id"`
 		TeamID    string    `json:"teamID"`
 		CreatorID string    `json:"creatorID"`
@@ -222,14 +222,14 @@ func TestGetThreads(t *testing.T) {
 
 	cases := []struct {
 		name string
-		data []thread
-		req  GetThreadsRequest
-		opts []GetThreadsOptions
+		data []threadSchema
+		req  thread.SearchThreadIDsRequest
+		opts []thread.SearchThreadIDsOption
 		res  []string
 	}{
 		{
 			name: "normal",
-			data: []thread{
+			data: []threadSchema{
 				{
 					ID:        id1,
 					TeamID:    myTeamID,
@@ -240,7 +240,7 @@ func TestGetThreads(t *testing.T) {
 					UpdatedAt: time.Now(),
 				},
 			},
-			req: GetThreadsRequest{
+			req: thread.SearchThreadIDsRequest{
 				Size: 10,
 				From: 0,
 			},
@@ -248,7 +248,7 @@ func TestGetThreads(t *testing.T) {
 		},
 		{
 			name: "specify word",
-			data: []thread{
+			data: []threadSchema{
 				{
 					ID:        id1,
 					TeamID:    myTeamID,
@@ -277,7 +277,7 @@ func TestGetThreads(t *testing.T) {
 					UpdatedAt: time.Now(),
 				},
 			},
-			req: GetThreadsRequest{
+			req: thread.SearchThreadIDsRequest{
 				Size: 10,
 				From: 0,
 				Word: "test",
@@ -286,7 +286,7 @@ func TestGetThreads(t *testing.T) {
 		},
 		{
 			name: "use closed only option",
-			data: []thread{
+			data: []threadSchema{
 				{
 					ID:        id1,
 					TeamID:    myTeamID,
@@ -315,19 +315,19 @@ func TestGetThreads(t *testing.T) {
 					UpdatedAt: time.Now(),
 				},
 			},
-			req: GetThreadsRequest{
+			req: thread.SearchThreadIDsRequest{
 				Size: 10,
 				From: 0,
 				Word: "",
 			},
-			opts: []GetThreadsOptions{
-				GetThreadsOptionsClosedOnly,
+			opts: []thread.SearchThreadIDsOption{
+				thread.SearchThreadIDsOptionOnlyClosed,
 			},
 			res: []string{id1, id2},
 		},
 		{
 			name: "use opened only option",
-			data: []thread{
+			data: []threadSchema{
 				{
 					ID:        id1,
 					TeamID:    myTeamID,
@@ -356,19 +356,19 @@ func TestGetThreads(t *testing.T) {
 					UpdatedAt: time.Now(),
 				},
 			},
-			req: GetThreadsRequest{
+			req: thread.SearchThreadIDsRequest{
 				Size: 10,
 				From: 0,
 				Word: "",
 			},
-			opts: []GetThreadsOptions{
-				GetThreadsOptionsOpenedOnly,
+			opts: []thread.SearchThreadIDsOption{
+				thread.SearchThreadIDsOptionOnlyOpened,
 			},
 			res: []string{id3},
 		},
 		{
 			name: "size is smaller than total",
-			data: []thread{
+			data: []threadSchema{
 				{
 					ID:        id1,
 					TeamID:    myTeamID,
@@ -388,7 +388,7 @@ func TestGetThreads(t *testing.T) {
 					UpdatedAt: time.Now(),
 				},
 			},
-			req: GetThreadsRequest{
+			req: thread.SearchThreadIDsRequest{
 				Size: 1,
 				From: 1,
 			},
@@ -396,7 +396,7 @@ func TestGetThreads(t *testing.T) {
 		},
 		{
 			name: "include other users thread",
-			data: []thread{
+			data: []threadSchema{
 				{
 					ID:        id1,
 					TeamID:    myTeamID,
@@ -416,7 +416,7 @@ func TestGetThreads(t *testing.T) {
 					UpdatedAt: time.Now(),
 				},
 			},
-			req: GetThreadsRequest{
+			req: thread.SearchThreadIDsRequest{
 				Size: 10,
 				From: 0,
 			},
@@ -424,7 +424,7 @@ func TestGetThreads(t *testing.T) {
 		},
 		{
 			name: "include other teams thread",
-			data: []thread{
+			data: []threadSchema{
 				{
 					ID:        id1,
 					TeamID:    myTeamID,
@@ -444,7 +444,7 @@ func TestGetThreads(t *testing.T) {
 					UpdatedAt: time.Now(),
 				},
 			},
-			req: GetThreadsRequest{
+			req: thread.SearchThreadIDsRequest{
 				Size: 10,
 				From: 0,
 			},
@@ -452,8 +452,8 @@ func TestGetThreads(t *testing.T) {
 		},
 		{
 			name: "no data",
-			data: []thread{},
-			req: GetThreadsRequest{
+			data: []threadSchema{},
+			req: thread.SearchThreadIDsRequest{
 				Size: 10,
 				From: 0,
 			},

@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/guregu/dynamo"
 	"github.com/uji/ness-api-function/domain/thread"
 	"github.com/uji/ness-api-function/reqctx"
@@ -52,6 +54,23 @@ type threadSchema struct {
 	Closed    string    `dynamo:"Closed"`
 	CreatedAt time.Time `dynamo:"CreatedAt"`
 	UpdatedAt time.Time `dynamo:"UpdatedAt"`
+}
+
+func newThreadSchema(thread thread.Thread) threadSchema {
+	clsd := "false"
+	if thread.Closed() {
+		clsd = "true"
+	}
+
+	return threadSchema{
+		PK:        string(thread.TeamID()),
+		SK:        thread.ID(),
+		CreatorID: string(thread.CreatorID()),
+		Content:   thread.Title(),
+		Closed:    clsd,
+		CreatedAt: thread.CreatedAt(),
+		UpdatedAt: thread.UpdatedAt(),
+	}
 }
 
 func (t threadSchema) toThread() thread.Thread {
@@ -105,4 +124,47 @@ func (t *threadQuery) GetThreadsByIDs(ctx context.Context, ids []string) ([]thre
 		res[i] = r.toThread()
 	}
 	return res, nil
+}
+
+func (t *threadQuery) Find(ctx context.Context, id string) (thread.DynamoDBThreadRow, error) {
+	var thrd threadSchema
+	ainfo, err := reqctx.GetAuthenticationInfo(ctx)
+	if err != nil {
+		return thread.DynamoDBThreadRow{}, err
+	}
+	if err := t.tbl.Get("PK", ainfo.TeamID()).Range("SK", dynamo.Equal, id).One(&thrd); err != nil {
+		return thread.DynamoDBThreadRow{}, err
+	}
+	return thread.DynamoDBThreadRow{
+		Id:        thrd.SK,
+		TeamID:    thrd.PK,
+		CreaterID: thrd.CreatorID,
+		Title:     thrd.Content,
+		Closed:    false,
+		CreatedAt: time.Time{},
+		UpdatedAt: time.Time{},
+	}, err
+}
+
+func (t *threadQuery) Create(ctx context.Context, thread thread.Thread) error {
+	condition := "attribute_not_exists(PK) AND attribute_not_exists(SK)"
+	thrd := newThreadSchema(thread)
+
+	if err := t.tbl.Put(&thrd).If(condition).Run(); err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case dynamodb.ErrCodeConditionalCheckFailedException:
+				return err
+			default:
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (t *threadQuery) Update(ctx context.Context, thread thread.Thread) error {
+	condition := "attribute_exists(PK) AND attribute_exists(SK)"
+	thrd := newThreadSchema(thread)
+	return t.tbl.Put(&thrd).If(condition).Run()
 }
