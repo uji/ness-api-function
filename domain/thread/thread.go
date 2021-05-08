@@ -34,6 +34,26 @@ type (
 
 var _ Thread = &thread{}
 
+func NewThread(
+	id string,
+	teamID TeamID,
+	createrID UserID,
+	title string,
+	closed bool,
+	createdAt time.Time,
+	updatedAt time.Time,
+) Thread {
+	return &thread{
+		id:        id,
+		teamID:    teamID,
+		createrID: createrID,
+		title:     title,
+		closed:    closed,
+		createdAt: createdAt,
+		updatedAt: updatedAt,
+	}
+}
+
 func (t *thread) ID() string {
 	return t.id
 }
