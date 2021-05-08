@@ -62,8 +62,51 @@ type GetThreadsRequest struct {
 	Word string
 }
 
+type boolQueryType string
+
+const (
+	boolQueryMust boolQueryType = "must"
+)
+
 type GetThreadsOptions interface {
+	generateQuery() map[string]interface{}
+	boolQueryType() boolQueryType
 }
+
+type getThreadsOptions struct {
+	boolQuery boolQueryType
+	query     string
+	key       string
+	value     interface{}
+}
+
+func (g getThreadsOptions) generateQuery() map[string]interface{} {
+	return map[string]interface{}{
+		g.query: map[string]interface{}{
+			g.key: g.value,
+		},
+	}
+}
+
+func (g getThreadsOptions) boolQueryType() boolQueryType {
+	return g.boolQuery
+}
+
+var (
+	GetThreadsOptionsOpenedOnly = getThreadsOptions{
+		boolQuery: boolQueryMust,
+		query:     "match_phrase",
+		key:       "closed",
+		value:     false,
+	}
+
+	GetThreadsOptionsClosedOnly = getThreadsOptions{
+		boolQuery: boolQueryMust,
+		query:     "match_phrase",
+		key:       "closed",
+		value:     true,
+	}
+)
 
 func (c *Client) GetThreadIDs(ctx context.Context, req GetThreadsRequest, opts ...GetThreadsOptions) ([]string, error) {
 	ainfo, err := reqctx.GetAuthenticationInfo(ctx)
@@ -71,7 +114,7 @@ func (c *Client) GetThreadIDs(ctx context.Context, req GetThreadsRequest, opts .
 		return nil, err
 	}
 
-	must := make([]map[string]interface{}, 0, 2)
+	must := make([]map[string]interface{}, 0, 3)
 	must = append(must, map[string]interface{}{
 		"match_phrase": map[string]string{
 			"teamID": ainfo.TeamID(),
@@ -84,6 +127,15 @@ func (c *Client) GetThreadIDs(ctx context.Context, req GetThreadsRequest, opts .
 				"title": req.Word,
 			},
 		})
+	}
+
+	for _, opt := range opts {
+		q := opt.generateQuery()
+		switch opt.boolQueryType() {
+		case boolQueryMust:
+			must = append(must, q)
+		default:
+		}
 	}
 
 	query := map[string]interface{}{

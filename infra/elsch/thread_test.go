@@ -224,6 +224,7 @@ func TestGetThreads(t *testing.T) {
 		name string
 		data []thread
 		req  GetThreadsRequest
+		opts []GetThreadsOptions
 		res  []string
 	}{
 		{
@@ -282,6 +283,88 @@ func TestGetThreads(t *testing.T) {
 				Word: "test",
 			},
 			res: []string{id1, id2},
+		},
+		{
+			name: "use closed only option",
+			data: []thread{
+				{
+					ID:        id1,
+					TeamID:    myTeamID,
+					CreatorID: myUserID,
+					Title:     "test1",
+					Closed:    true,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+				{
+					ID:        id2,
+					TeamID:    myTeamID,
+					CreatorID: myUserID,
+					Title:     "test2",
+					Closed:    true,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+				{
+					ID:        id3,
+					TeamID:    myTeamID,
+					CreatorID: myUserID,
+					Title:     "test3",
+					Closed:    false,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+			},
+			req: GetThreadsRequest{
+				Size: 10,
+				From: 0,
+				Word: "",
+			},
+			opts: []GetThreadsOptions{
+				GetThreadsOptionsClosedOnly,
+			},
+			res: []string{id1, id2},
+		},
+		{
+			name: "use opened only option",
+			data: []thread{
+				{
+					ID:        id1,
+					TeamID:    myTeamID,
+					CreatorID: myUserID,
+					Title:     "test1",
+					Closed:    true,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+				{
+					ID:        id2,
+					TeamID:    myTeamID,
+					CreatorID: myUserID,
+					Title:     "test2",
+					Closed:    true,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+				{
+					ID:        id3,
+					TeamID:    myTeamID,
+					CreatorID: myUserID,
+					Title:     "test3",
+					Closed:    false,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+			},
+			req: GetThreadsRequest{
+				Size: 10,
+				From: 0,
+				Word: "",
+			},
+			opts: []GetThreadsOptions{
+				GetThreadsOptionsOpenedOnly,
+			},
+			res: []string{id3},
 		},
 		{
 			name: "size is smaller than total",
@@ -411,7 +494,7 @@ func TestGetThreads(t *testing.T) {
 				}
 			}
 
-			res, err := clt.GetThreadIDs(ctx, c.req)
+			res, err := clt.GetThreadIDs(ctx, c.req, c.opts...)
 			if err != nil {
 				t.Fatal(err)
 			}
