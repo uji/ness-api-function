@@ -73,8 +73,13 @@ func NewDynamoRepository(
 }
 
 func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Thread, error) {
+	size := req.size
+	if size > 100 {
+		size = 100
+	}
+
 	esreq := SearchThreadIDsRequest{
-		Size: req.size,
+		Size: size,
 		From: req.from,
 		Word: req.word,
 	}

@@ -2,6 +2,7 @@ package thread
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 	"time"
 
@@ -22,11 +23,9 @@ func Test_get(t *testing.T) {
 		{
 			name: "normal",
 			req: repositoryGetRequest{
-				offsetTime: null.Time{},
-				closed:     null.Bool{},
-				size:       5,
-				from:       3,
-				word:       "test",
+				size: 5,
+				from: 3,
+				word: "test",
 			},
 			esReq: SearchThreadIDsRequest{
 				Size: 5,
@@ -34,6 +33,65 @@ func Test_get(t *testing.T) {
 				Word: "test",
 			},
 			esOpts: []SearchThreadIDsOption{},
+		},
+		{
+			name: "size over limit",
+			req: repositoryGetRequest{
+				size: 101,
+				from: 3,
+				word: "test",
+			},
+			esReq: SearchThreadIDsRequest{
+				Size: 100,
+				From: 3,
+				Word: "test",
+			},
+			esOpts: []SearchThreadIDsOption{},
+		},
+		{
+			name: "closed true",
+			req: repositoryGetRequest{
+				closed: null.Bool{
+					NullBool: sql.NullBool{
+						Bool:  true,
+						Valid: true,
+					},
+				},
+				size: 5,
+				from: 3,
+				word: "test",
+			},
+			esReq: SearchThreadIDsRequest{
+				Size: 5,
+				From: 3,
+				Word: "test",
+			},
+			esOpts: []SearchThreadIDsOption{
+				SearchThreadIDsOptionOnlyClosed,
+			},
+		},
+		{
+			name: "closed true",
+			req: repositoryGetRequest{
+				offsetTime: null.Time{},
+				closed: null.Bool{
+					NullBool: sql.NullBool{
+						Bool:  false,
+						Valid: true,
+					},
+				},
+				size: 5,
+				from: 3,
+				word: "test",
+			},
+			esReq: SearchThreadIDsRequest{
+				Size: 5,
+				From: 3,
+				Word: "test",
+			},
+			esOpts: []SearchThreadIDsOption{
+				SearchThreadIDsOptionOnlyOpened,
+			},
 		},
 	}
 
