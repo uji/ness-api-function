@@ -103,7 +103,9 @@ func NewThreadQuery(
 	return &threadQuery{db, &tbl}
 }
 
-func (t *threadQuery) GetThreadsByIDs(ctx context.Context, ids []string) ([]thread.Thread, error) {
+var _ thread.DynamoDB = &threadQuery{}
+
+func (t *threadQuery) GetThreadsByIDs(ctx context.Context, ids []string) (map[string]thread.DynamoDBThreadRow, error) {
 	ainfo, err := reqctx.GetAuthenticationInfo(ctx)
 	if err != nil {
 		return nil, err
@@ -119,9 +121,21 @@ func (t *threadQuery) GetThreadsByIDs(ctx context.Context, ids []string) ([]thre
 		return nil, err
 	}
 
-	res := make([]thread.Thread, len(rslt))
-	for i, r := range rslt {
-		res[i] = r.toThread()
+	res := make(map[string]thread.DynamoDBThreadRow, len(rslt))
+	for _, r := range rslt {
+		clsd := false
+		if r.Closed == "true" {
+			clsd = true
+		}
+		res[r.SK] = thread.DynamoDBThreadRow{
+			Id:        r.SK,
+			TeamID:    r.PK,
+			CreaterID: r.CreatorID,
+			Title:     r.Content,
+			Closed:    clsd,
+			CreatedAt: r.CreatedAt,
+			UpdatedAt: r.UpdatedAt,
+		}
 	}
 	return res, nil
 }

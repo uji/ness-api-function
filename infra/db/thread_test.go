@@ -6,25 +6,16 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/uji/ness-api-function/domain/thread"
 	"github.com/uji/ness-api-function/reqctx"
 )
 
 func TestThreadQueryGet(t *testing.T) {
-	type responseThread struct {
-		id        string
-		teamID    string
-		createrID string
-		title     string
-		closed    bool
-		createdAt time.Time
-		updatedAt time.Time
-	}
-
 	cases := []struct {
 		name       string
 		data       []threadSchema
 		requestIDs []string
-		expt       []responseThread
+		expt       map[string]thread.DynamoDBThreadRow
 		err        error
 	}{
 		{
@@ -59,24 +50,25 @@ func TestThreadQueryGet(t *testing.T) {
 				},
 			},
 			requestIDs: []string{"Thread#1", "Thread#0"},
-			expt: []responseThread{
-				{
-					id:        "Thread#1",
-					teamID:    "Team#0",
-					createrID: "UserID#1",
-					title:     "Thread1",
-					closed:    true,
-					createdAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-					updatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
+			expt: map[string]thread.DynamoDBThreadRow{
+
+				"Thread#1": {
+					Id:        "Thread#1",
+					TeamID:    "Team#0",
+					CreaterID: "UserID#1",
+					Title:     "Thread1",
+					Closed:    true,
+					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
+					UpdatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
 				},
-				{
-					id:        "Thread#0",
-					teamID:    "Team#0",
-					createrID: "UserID#0",
-					title:     "Thread0",
-					closed:    false,
-					createdAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
-					updatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
+				"Thread#0": {
+					Id:        "Thread#0",
+					TeamID:    "Team#0",
+					CreaterID: "UserID#0",
+					Title:     "Thread0",
+					Closed:    false,
+					CreatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
+					UpdatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
 				},
 			},
 		},
@@ -105,20 +97,7 @@ func TestThreadQueryGet(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			rslt := make([]responseThread, len(res))
-			for i, t := range res {
-				rslt[i] = responseThread{
-					id:        t.ID(),
-					teamID:    string(t.TeamID()),
-					createrID: string(t.CreatorID()),
-					title:     t.Title(),
-					closed:    t.Closed(),
-					createdAt: t.CreatedAt(),
-					updatedAt: t.UpdatedAt(),
-				}
-			}
-
-			if diff := cmp.Diff(rslt, c.expt, cmp.AllowUnexported(responseThread{})); diff != "" {
+			if diff := cmp.Diff(res, c.expt); diff != "" {
 				t.Fatal(diff)
 			}
 		})
