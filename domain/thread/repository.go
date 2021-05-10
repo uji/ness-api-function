@@ -8,8 +8,8 @@ import (
 )
 
 type repository struct {
-	dnm dynamoDB
-	es  elasticsearch
+	dnm DynamoDB
+	es  ElasticSearch
 }
 
 type DynamoDBThreadRow struct {
@@ -34,7 +34,7 @@ func (t DynamoDBThreadRow) toThread() Thread {
 	}
 }
 
-type dynamoDB interface {
+type DynamoDB interface {
 	GetThreadsByIDs(ctx context.Context, ids []string) (map[string]DynamoDBThreadRow, error)
 	Find(ctx context.Context, id string) (DynamoDBThreadRow, error)
 	Create(ctx context.Context, thread Thread) error
@@ -54,7 +54,7 @@ const (
 	SearchThreadIDsOptionOnlyOpened
 )
 
-type elasticsearch interface {
+type ElasticSearch interface {
 	SearchThreadIDs(context.Context, SearchThreadIDsRequest, ...SearchThreadIDsOption) ([]string, error)
 	PutThread(context.Context, Thread) error
 }
@@ -66,8 +66,8 @@ func repositoryError(err error) error {
 }
 
 func NewDynamoRepository(
-	dnm dynamoDB,
-	es elasticsearch,
+	dnm DynamoDB,
+	es ElasticSearch,
 ) *repository {
 	return &repository{dnm, es}
 }

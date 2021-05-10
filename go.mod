@@ -1,6 +1,6 @@
 module github.com/uji/ness-api-function
 
-go 1.15
+go 1.16
 
 require (
 	cloud.google.com/go/firestore v1.3.0 // indirect
