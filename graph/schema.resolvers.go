@@ -44,9 +44,24 @@ func (r *queryResolver) Node(ctx context.Context, id string) (model.Node, error)
 func (r *queryResolver) Threads(ctx context.Context, input model.GetThreadsInput) ([]*model.Thread, error) {
 	ofst := null.StringFromPtr(input.OffsetTime)
 	clsd := null.BoolFromPtr(input.Closed)
+	size := 30
+	if input.Size != nil {
+		size = *input.Size
+	}
+	from := 0
+	if input.From != nil {
+		from = *input.From
+	}
+	word := ""
+	if input.Word != nil {
+		word = *input.Word
+	}
 	thrds, err := r.thread.Get(ctx, thread.GetRequest{
 		OffsetTime: ofst,
 		Closed:     clsd,
+		Size:       size,
+		From:       from,
+		Word:       word,
 	})
 	if err != nil {
 		return nil, err
