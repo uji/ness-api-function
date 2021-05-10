@@ -1,17 +1,152 @@
 package thread
 
 import (
+	"context"
 	"testing"
+	"time"
+
+	"github.com/golang/mock/gomock"
+	"github.com/google/go-cmp/cmp"
+	"github.com/guregu/null"
 )
 
-func TestRepoGet(t *testing.T) {
+func Test_get(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name   string
+		req    repositoryGetRequest
+		esReq  SearchThreadIDsRequest
+		esOpts []SearchThreadIDsOption
+	}{
+		{
+			name: "normal",
+			req: repositoryGetRequest{
+				offsetTime: null.Time{},
+				closed:     null.Bool{},
+				size:       5,
+				from:       3,
+				word:       "test",
+			},
+			esReq: SearchThreadIDsRequest{
+				Size: 5,
+				From: 3,
+				Word: "test",
+			},
+			esOpts: []SearchThreadIDsOption{},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			dnmdb := NewMockdynamoDB(ctrl)
+			es := NewMockelasticsearch(ctrl)
+			sut := NewDynamoRepository(dnmdb, es)
+
+			ctx := context.Background()
+			thrdIDs := []string{"1", "2"}
+			es.EXPECT().SearchThreadIDs(ctx, c.esReq, c.esOpts).Return(thrdIDs, nil)
+			dnmdbrows := map[string]DynamoDBThreadRow{
+				"Thread#0": {
+					Id:        "Thread#0",
+					TeamID:    "Team#0",
+					CreaterID: "User#0",
+					Title:     "Title",
+					Closed:    true,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+			}
+			dnmdb.EXPECT().GetThreadsByIDs(ctx, thrdIDs).Return(dnmdbrows, nil)
+			res, err := sut.get(ctx, c.req)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for _, r := range res {
+				if diff := cmp.Diff(r, dnmdbrows[r.ID()].toThread(), cmp.AllowUnexported(thread{})); diff != "" {
+					t.Fatal(diff)
+				}
+			}
+		})
+	}
 }
 
 func TestRepo_find(t *testing.T) {
+	t.Parallel()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	dnmdb := NewMockdynamoDB(ctrl)
+	es := NewMockelasticsearch(ctrl)
+	sut := NewDynamoRepository(dnmdb, es)
+
+	ctx := context.Background()
+	req := repositoryFindRequest{
+		teamID:   "Team#0",
+		threadID: "Thread#0",
+	}
+	dnmdbres := DynamoDBThreadRow{
+		Id:        "Thread#0",
+		TeamID:    "Team#0",
+		CreaterID: "User#0",
+		Title:     "Title",
+		Closed:    true,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	dnmdb.EXPECT().Find(ctx, "Thread#0").Return(dnmdbres, nil)
+	res, err := sut.find(ctx, req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(res, dnmdbres.toThread(), cmp.AllowUnexported(thread{})); diff != "" {
+		t.Fatal(diff)
+	}
 }
 
 func TestRepoCreate(t *testing.T) {
+	t.Parallel()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	dnmdb := NewMockdynamoDB(ctrl)
+	es := NewMockelasticsearch(ctrl)
+	sut := NewDynamoRepository(dnmdb, es)
+
+	ctx := context.Background()
+	thrd := NewMockThread(ctrl)
+	req := repositoryCreateRequest{
+		thread: thrd,
+	}
+	dnmdb.EXPECT().Create(ctx, thrd).Return(nil)
+	es.EXPECT().PutThread(ctx, thrd).Return(nil)
+	if err := sut.create(ctx, req); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestRepo_update(t *testing.T) {
+	t.Parallel()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	dnmdb := NewMockdynamoDB(ctrl)
+	es := NewMockelasticsearch(ctrl)
+	sut := NewDynamoRepository(dnmdb, es)
+
+	ctx := context.Background()
+	thrd := NewMockThread(ctrl)
+	req := repositoryUpdateRequest{
+		thread: thrd,
+	}
+	dnmdb.EXPECT().Update(ctx, thrd).Return(nil)
+	es.EXPECT().PutThread(ctx, thrd).Return(nil)
+	if err := sut.update(ctx, req); err != nil {
+		t.Fatal(err)
+	}
 }
