@@ -82,4 +82,7 @@ status:
 	@curl -X GET "http://elasticsearch:9200/_cat/health?v&pretty"
 	@echo "--elasticsearch indices--"
 	@curl -X GET "http://elasticsearch:9200/_cat/indices?v&pretty"
+
+es-threads:
+	@curl -X GET "elasticsearch:9200/thread/_search?pretty" -H 'Content-Type: application/json' -d' { "query": {"match_all": {}} }'
 endif
