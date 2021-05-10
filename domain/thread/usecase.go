@@ -49,6 +49,9 @@ type (
 	GetRequest struct {
 		OffsetTime null.String
 		Closed     null.Bool
+		Size       int
+		From       int
+		Word       string
 	}
 	CreateRequest struct {
 		Title string
@@ -64,6 +67,9 @@ type (
 func (u *Usecase) Get(ctx context.Context, req GetRequest) ([]Thread, error) {
 	return u.repo.get(ctx, repositoryGetRequest{
 		closed: req.Closed,
+		size:   req.Size,
+		from:   req.From,
+		word:   req.Word,
 	})
 }
 

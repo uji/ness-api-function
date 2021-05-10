@@ -21,9 +21,19 @@ func TestUsecaseGet(t *testing.T) {
 	}{
 		{
 			name: "normal",
-			req:  GetRequest{null.String{}, null.NewBool(true, true)},
+			req: GetRequest{
+				OffsetTime: null.String{},
+				Closed:     null.NewBool(true, true),
+				Size:       5,
+				From:       5,
+				Word:       "test",
+			},
 			repoReq: repositoryGetRequest{
-				closed: null.NewBool(true, true)},
+				closed: null.NewBool(true, true),
+				size:   5,
+				from:   5,
+				word:   "test",
+			},
 			callRepo: true,
 		},
 	}
