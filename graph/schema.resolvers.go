@@ -9,20 +9,9 @@ import (
 
 	"github.com/guregu/null"
 	"github.com/uji/ness-api-function/domain/thread"
-	"github.com/uji/ness-api-function/domain/usr"
 	"github.com/uji/ness-api-function/graph/generated"
 	"github.com/uji/ness-api-function/graph/model"
 )
-
-func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUp) (*model.User, error) {
-	user, err := r.user.Create(ctx, usr.CreateRequest{
-		Name: input.Name,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return cnvUser(user), nil
-}
 
 func (r *mutationResolver) CreateThread(ctx context.Context, input model.NewThread) (*model.Thread, error) {
 	res, err := r.thread.Create(ctx, thread.CreateRequest{

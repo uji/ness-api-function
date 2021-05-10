@@ -48,7 +48,6 @@ type ComplexityRoot struct {
 		CloseThread  func(childComplexity int, input model.CloseThread) int
 		CreateThread func(childComplexity int, input model.NewThread) int
 		OpenThread   func(childComplexity int, input model.OpenThread) int
-		SignUp       func(childComplexity int, input model.SignUp) int
 	}
 
 	Query struct {
@@ -73,7 +72,6 @@ type ComplexityRoot struct {
 }
 
 type MutationResolver interface {
-	SignUp(ctx context.Context, input model.SignUp) (*model.User, error)
 	CreateThread(ctx context.Context, input model.NewThread) (*model.Thread, error)
 	OpenThread(ctx context.Context, input model.OpenThread) (*model.Thread, error)
 	CloseThread(ctx context.Context, input model.CloseThread) (*model.Thread, error)
@@ -133,18 +131,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.OpenThread(childComplexity, args["input"].(model.OpenThread)), true
-
-	case "Mutation.signUp":
-		if e.complexity.Mutation.SignUp == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_signUp_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.SignUp(childComplexity, args["input"].(model.SignUp)), true
 
 	case "Query.node":
 		if e.complexity.Query.Node == nil {
@@ -325,15 +311,14 @@ type Thread implements Node {
 input GetThreadsInput {
   offsetTime: DateTime
   closed: Boolean
+  size: Int
+  from: Int
+  word: String
 }
 
 type Query {
   node(id: ID!): Node!
   threads(input: GetThreadsInput!): [Thread!]!
-}
-
-input SignUp {
-  name: String!
 }
 
 input NewThread {
@@ -349,7 +334,6 @@ input CloseThread {
 }
 
 type Mutation {
-  signUp(input: SignUp!): User!
   createThread(input: NewThread!): Thread!
   openThread(input: OpenThread!): Thread!
   closeThread(input: CloseThread!): Thread!
@@ -399,21 +383,6 @@ func (ec *executionContext) field_Mutation_openThread_args(ctx context.Context, 
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
 		arg0, err = ec.unmarshalNOpenThread2githubᚗcomᚋujiᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐOpenThread(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_signUp_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.SignUp
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
-		arg0, err = ec.unmarshalNSignUp2githubᚗcomᚋujiᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐSignUp(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -504,47 +473,6 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
-
-func (ec *executionContext) _Mutation_signUp(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_signUp_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().SignUp(rctx, args["input"].(model.SignUp))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋujiᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
-}
 
 func (ec *executionContext) _Mutation_createThread(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
@@ -2223,6 +2151,30 @@ func (ec *executionContext) unmarshalInputGetThreadsInput(ctx context.Context, o
 			if err != nil {
 				return it, err
 			}
+		case "size":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("size"))
+			it.Size, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "from":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("from"))
+			it.From, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "word":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("word"))
+			it.Word, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -2260,26 +2212,6 @@ func (ec *executionContext) unmarshalInputOpenThread(ctx context.Context, obj in
 
 			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("threadID"))
 			it.ThreadID, err = ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputSignUp(ctx context.Context, obj interface{}) (model.SignUp, error) {
-	var it model.SignUp
-	var asMap = obj.(map[string]interface{})
-
-	for k, v := range asMap {
-		switch k {
-		case "name":
-			var err error
-
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("name"))
-			it.Name, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2335,11 +2267,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
-		case "signUp":
-			out.Values[i] = ec._Mutation_signUp(ctx, field)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		case "createThread":
 			out.Values[i] = ec._Mutation_createThread(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -2833,11 +2760,6 @@ func (ec *executionContext) unmarshalNOpenThread2githubᚗcomᚋujiᚋnessᚑapi
 	return res, graphql.WrapErrorWithInputPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNSignUp2githubᚗcomᚋujiᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐSignUp(ctx context.Context, v interface{}) (model.SignUp, error) {
-	res, err := ec.unmarshalInputSignUp(ctx, v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.WrapErrorWithInputPath(ctx, err)
@@ -2902,20 +2824,6 @@ func (ec *executionContext) marshalNThread2ᚖgithubᚗcomᚋujiᚋnessᚑapiᚑ
 		return graphql.Null
 	}
 	return ec._Thread(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNUser2githubᚗcomᚋujiᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
-	return ec._User(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋujiᚋnessᚑapiᚑfunctionᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	return ec._User(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -3184,6 +3092,21 @@ func (ec *executionContext) marshalODateTime2ᚖstring(ctx context.Context, sel 
 		return graphql.Null
 	}
 	return graphql.MarshalString(*v)
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalInt(*v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

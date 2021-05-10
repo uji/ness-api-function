@@ -13,6 +13,9 @@ type CloseThread struct {
 type GetThreadsInput struct {
 	OffsetTime *string `json:"offsetTime"`
 	Closed     *bool   `json:"closed"`
+	Size       *int    `json:"size"`
+	From       *int    `json:"from"`
+	Word       *string `json:"word"`
 }
 
 type NewThread struct {
@@ -21,10 +24,6 @@ type NewThread struct {
 
 type OpenThread struct {
 	ThreadID string `json:"threadID"`
-}
-
-type SignUp struct {
-	Name string `json:"name"`
 }
 
 type Thread struct {
