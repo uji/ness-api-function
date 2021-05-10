@@ -23,6 +23,8 @@ type putThreadRequest struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
+var _ thread.ElasticSearch = &Client{}
+
 func (c *Client) PutThread(ctx context.Context, thread thread.Thread) error {
 	req := putThreadRequest{
 		ID:        thread.ID(),
@@ -56,7 +58,7 @@ func (c *Client) DeleteThread(ctx context.Context, threadID string) error {
 	return err
 }
 
-func (c *Client) GetThreadIDs(
+func (c *Client) SearchThreadIDs(
 	ctx context.Context,
 	req thread.SearchThreadIDsRequest,
 	opts ...thread.SearchThreadIDsOption,

@@ -494,7 +494,7 @@ func TestGetThreads(t *testing.T) {
 				}
 			}
 
-			res, err := clt.GetThreadIDs(ctx, c.req, c.opts...)
+			res, err := clt.SearchThreadIDs(ctx, c.req, c.opts...)
 			if err != nil {
 				t.Fatal(err)
 			}
