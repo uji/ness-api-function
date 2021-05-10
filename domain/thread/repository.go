@@ -98,6 +98,10 @@ func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Threa
 		return nil, err
 	}
 
+	if len(ids) == 0 {
+		return []Thread{}, nil
+	}
+
 	rslt, err := d.dnm.GetThreadsByIDs(ctx, ids)
 	if err != nil {
 		return nil, err

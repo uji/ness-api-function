@@ -131,6 +131,27 @@ func Test_get(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("ids not found", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		dnmdb := NewMockdynamoDB(ctrl)
+		es := NewMockelasticsearch(ctrl)
+		sut := NewDynamoRepository(dnmdb, es)
+
+		ctx := context.Background()
+		thrdIDs := []string{}
+		req := SearchThreadIDsRequest{}
+		es.EXPECT().SearchThreadIDs(ctx, req).Return(thrdIDs, nil)
+		res, err := sut.get(ctx, repositoryGetRequest{})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(res) != 0 {
+			t.Fatal(res)
+		}
+	})
 }
 
 func TestRepo_find(t *testing.T) {
