@@ -11,11 +11,10 @@ type CloseThread struct {
 }
 
 type GetThreadsInput struct {
-	OffsetTime *string `json:"offsetTime"`
-	Closed     *bool   `json:"closed"`
-	Size       *int    `json:"size"`
-	From       *int    `json:"from"`
-	Word       *string `json:"word"`
+	Closed *bool   `json:"closed"`
+	Size   *int    `json:"size"`
+	From   *int    `json:"from"`
+	Word   *string `json:"word"`
 }
 
 type NewThread struct {
