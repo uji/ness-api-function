@@ -73,7 +73,6 @@ func Test_get(t *testing.T) {
 		{
 			name: "closed true",
 			req: repositoryGetRequest{
-				offsetTime: null.Time{},
 				closed: null.Bool{
 					NullBool: sql.NullBool{
 						Bool:  false,

@@ -2,7 +2,6 @@ package thread
 
 import (
 	"context"
-	"time"
 
 	"github.com/guregu/null"
 	"github.com/uji/ness-api-function/reqctx"
@@ -10,11 +9,10 @@ import (
 
 type (
 	repositoryGetRequest struct {
-		offsetTime null.Time
-		closed     null.Bool
-		size       int
-		from       int
-		word       string
+		closed null.Bool
+		size   int
+		from   int
+		word   string
 	}
 
 	repositoryFindRequest struct {
@@ -64,18 +62,8 @@ type (
 )
 
 func (u *Usecase) Get(ctx context.Context, req GetRequest) ([]Thread, error) {
-	var ofst null.Time
-	if req.OffsetTime.Valid {
-		t, err := time.Parse(time.RFC3339, req.OffsetTime.String)
-		if err != nil {
-			return nil, ErrorTimeFormatInValid
-		}
-		ofst = null.TimeFrom(t)
-	}
-
 	return u.repo.get(ctx, repositoryGetRequest{
-		closed:     req.Closed,
-		offsetTime: ofst,
+		closed: req.Closed,
 	})
 }
 
