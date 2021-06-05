@@ -10,6 +10,7 @@ import (
 	"github.com/uji/ness-api-function/graph"
 	"github.com/uji/ness-api-function/graph/generated"
 	"github.com/uji/ness-api-function/infra/db"
+	"github.com/uji/ness-api-function/infra/elsch"
 	"github.com/uji/ness-api-function/infra/fbs"
 	"github.com/uji/ness-api-function/infra/middleware"
 )
@@ -20,10 +21,15 @@ func NewRegisterdServer() http.Handler {
 	if err != nil {
 		panic(err)
 	}
+	es, err := elsch.NewClient(elsch.ThreadIndexName)
+	if err != nil {
+		panic(err)
+	}
 
 	usrRp := usr.NewDynamoRepository(dnmdb, db.UserTableName)
 	user := usr.NewUsecase(fbsauth, usr.DefaultGenerator, usrRp)
-	thrdRp := thread.NewDynamoRepository(dnmdb, db.ThreadTableName)
+	thrdQr := db.NewThreadQuery(dnmdb, db.ThreadTableName)
+	thrdRp := thread.NewDynamoRepository(thrdQr, es)
 	thrd := thread.NewUsecase(thread.DefaultGenerator, thrdRp)
 
 	rslv := graph.NewResolver(user, thrd)
@@ -36,10 +42,15 @@ func NewRegisterdServer() http.Handler {
 func NewRegisterdServerWithDammyAuth(teamID, userID string) http.Handler {
 	dnmdb := db.NewDynamoDB()
 	fbsauth := &usr.DammyFireBaseAuthClient{}
+	es, err := elsch.NewClient(elsch.ThreadIndexName)
+	if err != nil {
+		panic(err)
+	}
 
 	usrRp := usr.NewDynamoRepository(dnmdb, db.UserTableName)
 	user := usr.NewUsecase(fbsauth, usr.DefaultGenerator, usrRp)
-	thrdRp := thread.NewDynamoRepository(dnmdb, db.ThreadTableName)
+	thrdQr := db.NewThreadQuery(dnmdb, db.ThreadTableName)
+	thrdRp := thread.NewDynamoRepository(thrdQr, es)
 	thrd := thread.NewUsecase(thread.DefaultGenerator, thrdRp)
 
 	rslv := graph.NewResolver(user, thrd)

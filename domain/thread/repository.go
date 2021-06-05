@@ -1,142 +1,142 @@
+//go:generate mockgen -source=$GOFILE -destination=mock_$GOFILE -package=$GOPACKAGE
 package thread
 
 import (
 	"context"
-	"fmt"
 	"time"
-
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/guregu/dynamo"
-	"github.com/uji/ness-api-function/reqctx"
 )
 
 type repository struct {
-	db  *dynamo.DB
-	tbl *dynamo.Table
+	dnm DynamoDB
+	es  ElasticSearch
+}
+
+type DynamoDBThreadRow struct {
+	Id        string
+	TeamID    string
+	CreaterID string
+	Title     string
+	Closed    bool
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (t DynamoDBThreadRow) toThread() Thread {
+	return &thread{
+		id:        t.Id,
+		teamID:    TeamID(t.TeamID),
+		createrID: UserID(t.CreaterID),
+		title:     t.Title,
+		closed:    t.Closed,
+		createdAt: t.CreatedAt,
+		updatedAt: t.UpdatedAt,
+	}
+}
+
+type DynamoDB interface {
+	GetThreadsByIDs(ctx context.Context, ids []string) (map[string]DynamoDBThreadRow, error)
+	Find(ctx context.Context, id string) (DynamoDBThreadRow, error)
+	Create(ctx context.Context, thread Thread) error
+	Update(ctx context.Context, thread Thread) error
+}
+
+type SearchThreadIDsRequest struct {
+	Size int
+	From int
+	Word string
+}
+
+type SearchThreadIDsOption int
+
+const (
+	SearchThreadIDsOptionOnlyClosed SearchThreadIDsOption = iota + 1
+	SearchThreadIDsOptionOnlyOpened
+)
+
+type ElasticSearch interface {
+	SearchThreadIDs(context.Context, SearchThreadIDsRequest, ...SearchThreadIDsOption) ([]string, error)
+	PutThread(context.Context, Thread) error
 }
 
 var _ Repository = &repository{}
 
-func repositoryError(err error) error {
-	return fmt.Errorf("repository: %w", err)
-}
-
 func NewDynamoRepository(
-	db *dynamo.DB,
-	tableName string,
+	dnm DynamoDB,
+	es ElasticSearch,
 ) *repository {
-	tbl := db.Table(tableName)
-	return &repository{db, &tbl}
+	return &repository{dnm, es}
 }
 
 func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Thread, error) {
-	var items []item
-	ainfo, err := reqctx.GetAuthenticationInfo(ctx)
+	size := req.size
+	if size > 100 {
+		size = 100
+	}
+
+	esreq := SearchThreadIDsRequest{
+		Size: size,
+		From: req.from,
+		Word: req.word,
+	}
+
+	opts := make([]SearchThreadIDsOption, 0, 1)
+	if req.closed.Valid {
+		if req.closed.Bool {
+			opts = append(opts, SearchThreadIDsOptionOnlyClosed)
+		} else {
+			opts = append(opts, SearchThreadIDsOptionOnlyOpened)
+		}
+	}
+
+	ids, err := d.es.SearchThreadIDs(ctx, esreq, opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	qr := d.tbl.Get("PK", ainfo.TeamID()).Index("PK-CreatedAt-index").Order(false)
-	if req.offsetTime.Valid {
-		qr = qr.Range("CreatedAt", dynamo.Less, req.offsetTime.Time)
+	if len(ids) == 0 {
+		return []Thread{}, nil
 	}
-	if req.closed.Valid {
-		clsd := "false"
-		if req.closed.Bool {
-			clsd = "true"
+
+	rslt, err := d.dnm.GetThreadsByIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]Thread, len(ids))
+	for i, id := range ids {
+		t := rslt[id]
+		res[i] = &thread{
+			id:        t.Id,
+			teamID:    TeamID(t.TeamID),
+			createrID: UserID(t.CreaterID),
+			title:     t.Title,
+			closed:    t.Closed,
+			createdAt: t.CreatedAt,
+			updatedAt: t.UpdatedAt,
 		}
-		qr = qr.Filter("Closed = ?", clsd)
 	}
 
-	if err := qr.All(&items); err != nil {
-		return nil, repositoryError(err)
-	}
-
-	rslts := make([]Thread, len(items))
-	for i, item := range items {
-		rslts[i] = item.toThread()
-	}
-	return rslts, nil
+	return res, nil
 }
 
 func (d *repository) find(ctx context.Context, req repositoryFindRequest) (Thread, error) {
-	var itm item
-	ainfo, err := reqctx.GetAuthenticationInfo(ctx)
+	thrd, err := d.dnm.Find(ctx, req.threadID)
 	if err != nil {
 		return nil, err
 	}
-
-	if err := d.tbl.Get("PK", ainfo.TeamID()).Range("SK", dynamo.Equal, req.threadID).One(&itm); err != nil {
-		return nil, err
-	}
-	return itm.toThread(), nil
+	return thrd.toThread(), nil
 }
 
 func (d *repository) create(ctx context.Context, req repositoryCreateRequest) error {
-	condition := "attribute_not_exists(PK) AND attribute_not_exists(SK)"
-	itm := newItem(req.thread)
-
-	err := d.tbl.Put(&itm).If(condition).Run()
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			case dynamodb.ErrCodeConditionalCheckFailedException:
-				return err
-			default:
-				return err
-			}
-		}
+	if err := d.dnm.Create(ctx, req.thread); err != nil {
+		return err
 	}
-
-	return nil
+	return d.es.PutThread(ctx, req.thread)
 }
 
 func (d *repository) update(ctx context.Context, req repositoryUpdateRequest) error {
-	condition := "attribute_exists(PK) AND attribute_exists(SK)"
-	return d.tbl.Put(newItem(req.thread)).If(condition).Run()
-}
-
-type item struct {
-	PK        string    // Hash key
-	SK        string    // Range key
-	CreatorID string    `dynamo:"CreatorID"`
-	Content   string    `dynamo:"Content"`
-	Closed    string    `dynamo:"Closed"`
-	CreatedAt time.Time `dynamo:"CreatedAt"`
-	UpdatedAt time.Time `dynamo:"UpdatedAt"`
-}
-
-func newItem(thread Thread) *item {
-	clsd := "false"
-	if thread.Closed() {
-		clsd = "true"
+	if err := d.dnm.Update(ctx, req.thread); err != nil {
+		return err
 	}
-
-	return &item{
-		PK:        string(thread.TeamID()),
-		SK:        thread.ID(),
-		CreatorID: string(thread.CreatorID()),
-		Content:   thread.Title(),
-		Closed:    clsd,
-		CreatedAt: thread.CreatedAt(),
-		UpdatedAt: thread.UpdatedAt(),
-	}
-}
-
-func (i *item) toThread() Thread {
-	clsd := false
-	if i.Closed == "true" {
-		clsd = true
-	}
-
-	return &thread{
-		id:        i.SK,
-		teamID:    TeamID(i.PK),
-		createrID: UserID(i.CreatorID),
-		title:     i.Content,
-		closed:    clsd,
-		createdAt: i.CreatedAt,
-		updatedAt: i.UpdatedAt,
-	}
+	return d.es.PutThread(ctx, req.thread)
 }

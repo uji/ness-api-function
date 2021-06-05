@@ -24,8 +24,10 @@ type Thread implements Node {
 }
 
 input GetThreadsInput {
-  offsetTime: DateTime
   closed: Boolean
+  size: Int
+  from: Int
+  word: String
 }
 
 type Query {

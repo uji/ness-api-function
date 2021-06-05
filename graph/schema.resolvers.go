@@ -9,20 +9,9 @@ import (
 
 	"github.com/guregu/null"
 	"github.com/uji/ness-api-function/domain/thread"
-	"github.com/uji/ness-api-function/domain/usr"
 	"github.com/uji/ness-api-function/graph/generated"
 	"github.com/uji/ness-api-function/graph/model"
 )
-
-func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUp) (*model.User, error) {
-	user, err := r.user.Create(ctx, usr.CreateRequest{
-		Name: input.Name,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return cnvUser(user), nil
-}
 
 func (r *mutationResolver) CreateThread(ctx context.Context, input model.NewThread) (*model.Thread, error) {
 	res, err := r.thread.Create(ctx, thread.CreateRequest{
@@ -53,11 +42,24 @@ func (r *queryResolver) Node(ctx context.Context, id string) (model.Node, error)
 }
 
 func (r *queryResolver) Threads(ctx context.Context, input model.GetThreadsInput) ([]*model.Thread, error) {
-	ofst := null.StringFromPtr(input.OffsetTime)
 	clsd := null.BoolFromPtr(input.Closed)
+	size := 30
+	if input.Size != nil {
+		size = *input.Size
+	}
+	from := 0
+	if input.From != nil {
+		from = *input.From
+	}
+	word := ""
+	if input.Word != nil {
+		word = *input.Word
+	}
 	thrds, err := r.thread.Get(ctx, thread.GetRequest{
-		OffsetTime: ofst,
-		Closed:     clsd,
+		Closed: clsd,
+		Size:   size,
+		From:   from,
+		Word:   word,
 	})
 	if err != nil {
 		return nil, err

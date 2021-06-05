@@ -2,442 +2,229 @@ package thread
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
-	"github.com/guregu/dynamo"
 	"github.com/guregu/null"
-	"github.com/uji/ness-api-function/infra/db"
-	"github.com/uji/ness-api-function/reqctx"
 )
 
-func TestRepoGet(t *testing.T) {
+func Test_get(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
-		name       string
-		items      []item
-		offsetTime null.Time
-		closed     null.Bool
-		expt       []Thread
-		err        error
+		name   string
+		req    repositoryGetRequest
+		esReq  SearchThreadIDsRequest
+		esOpts []SearchThreadIDsOption
 	}{
 		{
 			name: "normal",
-			items: []item{
-				{
-					PK:        "Team#0",
-					SK:        "Thread#0",
-					CreatorID: "UserID#0",
-					Content:   "Thread0",
-					Closed:    "false",
-					CreatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
-				},
-				{
-					PK:        "Team#0",
-					SK:        "Thread#1",
-					CreatorID: "UserID#1",
-					Content:   "Thread1",
-					Closed:    "true",
-					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-				},
-				{
-					PK:        "Team#1",
-					SK:        "Thread#3",
-					CreatorID: "UserID#3",
-					Content:   "Thread3",
-					Closed:    "true",
-					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-				},
+			req: repositoryGetRequest{
+				size: 5,
+				from: 3,
+				word: "test",
 			},
-			offsetTime: null.Time{},
-			expt: []Thread{
-				&thread{
-					id:        "Thread#1",
-					teamID:    TeamID("Team#0"),
-					createrID: UserID("UserID#1"),
-					title:     "Thread1",
-					closed:    true,
-					createdAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-					updatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
+			esReq: SearchThreadIDsRequest{
+				Size: 5,
+				From: 3,
+				Word: "test",
+			},
+			esOpts: []SearchThreadIDsOption{},
+		},
+		{
+			name: "size over limit",
+			req: repositoryGetRequest{
+				size: 101,
+				from: 3,
+				word: "test",
+			},
+			esReq: SearchThreadIDsRequest{
+				Size: 100,
+				From: 3,
+				Word: "test",
+			},
+			esOpts: []SearchThreadIDsOption{},
+		},
+		{
+			name: "closed true",
+			req: repositoryGetRequest{
+				closed: null.Bool{
+					NullBool: sql.NullBool{
+						Bool:  true,
+						Valid: true,
+					},
 				},
-				&thread{
-					id:        "Thread#0",
-					teamID:    TeamID("Team#0"),
-					createrID: UserID("UserID#0"),
-					title:     "Thread0",
-					closed:    false,
-					createdAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
-					updatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
-				},
+				size: 5,
+				from: 3,
+				word: "test",
+			},
+			esReq: SearchThreadIDsRequest{
+				Size: 5,
+				From: 3,
+				Word: "test",
+			},
+			esOpts: []SearchThreadIDsOption{
+				SearchThreadIDsOptionOnlyClosed,
 			},
 		},
 		{
-			name: "limited and set lastEvaluatedID",
-			items: []item{
-				{
-					PK:        "Team#0",
-					SK:        "Thread#0",
-					Content:   "Thread0",
-					Closed:    "false",
-					CreatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
+			name: "closed true",
+			req: repositoryGetRequest{
+				closed: null.Bool{
+					NullBool: sql.NullBool{
+						Bool:  false,
+						Valid: true,
+					},
 				},
-				{
-					PK:        "Team#0",
-					SK:        "Thread#1",
-					Content:   "Thread1",
-					Closed:    "true",
-					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-				},
+				size: 5,
+				from: 3,
+				word: "test",
 			},
-			offsetTime: null.TimeFrom(time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC)),
-			expt: []Thread{
-				&thread{
-					id:        "Thread#0",
-					teamID:    TeamID("Team#0"),
-					title:     "Thread0",
-					closed:    false,
-					createdAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
-					updatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
-				},
+			esReq: SearchThreadIDsRequest{
+				Size: 5,
+				From: 3,
+				Word: "test",
 			},
-		},
-		{
-			name: "filtered opened",
-			items: []item{
-				{
-					PK:        "Team#0",
-					SK:        "Thread#0",
-					Content:   "Thread0",
-					Closed:    "false",
-					CreatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
-				},
-				{
-					PK:        "Team#0",
-					SK:        "Thread#1",
-					Content:   "Thread1",
-					Closed:    "true",
-					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-				},
-			},
-			closed: null.NewBool(false, true),
-			expt: []Thread{
-				&thread{
-					id:        "Thread#0",
-					teamID:    TeamID("Team#0"),
-					title:     "Thread0",
-					closed:    false,
-					createdAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
-					updatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
-				},
-			},
-		},
-		{
-			name: "filtered closed",
-			items: []item{
-				{
-					PK:        "Team#0",
-					SK:        "Thread#0",
-					Content:   "Thread0",
-					Closed:    "false",
-					CreatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
-				},
-				{
-					PK:        "Team#0",
-					SK:        "Thread#1",
-					Content:   "Thread1",
-					Closed:    "true",
-					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-				},
-			},
-			closed: null.NewBool(true, true),
-			expt: []Thread{
-				&thread{
-					id:        "Thread#1",
-					teamID:    TeamID("Team#0"),
-					title:     "Thread1",
-					closed:    true,
-					createdAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-					updatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-				},
+			esOpts: []SearchThreadIDsOption{
+				SearchThreadIDsOptionOnlyOpened,
 			},
 		},
 	}
 
 	for _, c := range cases {
+		c := c
 		t.Run(c.name, func(t *testing.T) {
-			dnmdb := db.NewDynamoDB()
-			tbl := db.CreateThreadTestTable(dnmdb, t)
-			defer db.DestroyTestTable(&tbl, t)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-			sut := NewDynamoRepository(dnmdb, tbl.Name())
+			dnmdb := NewMockdynamoDB(ctrl)
+			es := NewMockelasticsearch(ctrl)
+			sut := NewDynamoRepository(dnmdb, es)
 
-			for _, d := range c.items {
-				if err := tbl.Put(d).Run(); err != nil {
-					t.Fatal(err)
-				}
+			ctx := context.Background()
+			thrdIDs := []string{"1", "2"}
+			es.EXPECT().SearchThreadIDs(ctx, c.esReq, c.esOpts).Return(thrdIDs, nil)
+			dnmdbrows := map[string]DynamoDBThreadRow{
+				"Thread#0": {
+					Id:        "Thread#0",
+					TeamID:    "Team#0",
+					CreaterID: "User#0",
+					Title:     "Title",
+					Closed:    true,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
 			}
-
-			ainfo := reqctx.NewAuthenticationInfo("Team#0", "")
-			ctx := reqctx.NewRequestContext(context.Background(), ainfo)
-			res, err := sut.get(ctx, repositoryGetRequest{
-				offsetTime: c.offsetTime,
-				closed:     c.closed,
-			})
-			if err != c.err {
+			dnmdb.EXPECT().GetThreadsByIDs(ctx, thrdIDs).Return(dnmdbrows, nil)
+			res, err := sut.get(ctx, c.req)
+			if err != nil {
 				t.Fatal(err)
 			}
 
-			opt := cmp.AllowUnexported(thread{})
-			if diff := cmp.Diff(c.expt, res, opt); diff != "" {
-				t.Fatal(diff)
+			for _, r := range res {
+				if diff := cmp.Diff(r, dnmdbrows[r.ID()].toThread(), cmp.AllowUnexported(thread{})); diff != "" {
+					t.Fatal(diff)
+				}
 			}
 		})
 	}
+
+	t.Run("ids not found", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		dnmdb := NewMockdynamoDB(ctrl)
+		es := NewMockelasticsearch(ctrl)
+		sut := NewDynamoRepository(dnmdb, es)
+
+		ctx := context.Background()
+		thrdIDs := []string{}
+		req := SearchThreadIDsRequest{}
+		es.EXPECT().SearchThreadIDs(ctx, req).Return(thrdIDs, nil)
+		res, err := sut.get(ctx, repositoryGetRequest{})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(res) != 0 {
+			t.Fatal(res)
+		}
+	})
 }
 
 func TestRepo_find(t *testing.T) {
-	cases := []struct {
-		name  string
-		items []item
-		req   repositoryFindRequest
-		expt  Thread
-		err   error
-	}{
-		{
-			name: "normal",
-			items: []item{
-				{
-					PK:        "Team#0",
-					SK:        "Thread#0",
-					CreatorID: "UserID#0",
-					Content:   "Thread0",
-					Closed:    "false",
-					CreatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC),
-				},
-				{
-					PK:        "Team#0",
-					SK:        "Thread#1",
-					CreatorID: "UserID#1",
-					Content:   "Thread1",
-					Closed:    "true",
-					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-				},
-				{
-					PK:        "Team#1",
-					SK:        "Thread#3",
-					CreatorID: "UserID#3",
-					Content:   "Thread3",
-					Closed:    "true",
-					CreatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-				},
-			},
-			req: repositoryFindRequest{
-				teamID:   "Team#0",
-				threadID: "Thread#1",
-			},
-			expt: &thread{
-				id:        "Thread#1",
-				teamID:    TeamID("Team#0"),
-				createrID: UserID("UserID#1"),
-				title:     "Thread1",
-				closed:    true,
-				createdAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-				updatedAt: time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC),
-			},
-		},
+	t.Parallel()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	dnmdb := NewMockdynamoDB(ctrl)
+	es := NewMockelasticsearch(ctrl)
+	sut := NewDynamoRepository(dnmdb, es)
+
+	ctx := context.Background()
+	req := repositoryFindRequest{
+		teamID:   "Team#0",
+		threadID: "Thread#0",
 	}
-
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			dnmdb := db.NewDynamoDB()
-			tbl := db.CreateThreadTestTable(dnmdb, t)
-			defer db.DestroyTestTable(&tbl, t)
-
-			sut := NewDynamoRepository(dnmdb, tbl.Name())
-
-			for _, d := range c.items {
-				if err := tbl.Put(d).Run(); err != nil {
-					t.Fatal(err)
-				}
-			}
-
-			ainfo := reqctx.NewAuthenticationInfo("Team#0", "")
-			ctx := reqctx.NewRequestContext(context.Background(), ainfo)
-			res, err := sut.find(ctx, c.req)
-			if err != c.err {
-				t.Fatal(err)
-			}
-
-			opt := cmp.AllowUnexported(thread{})
-			if diff := cmp.Diff(c.expt, res, opt); diff != "" {
-				t.Fatal(diff)
-			}
-		})
+	dnmdbres := DynamoDBThreadRow{
+		Id:        "Thread#0",
+		TeamID:    "Team#0",
+		CreaterID: "User#0",
+		Title:     "Title",
+		Closed:    true,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	dnmdb.EXPECT().Find(ctx, "Thread#0").Return(dnmdbres, nil)
+	res, err := sut.find(ctx, req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(res, dnmdbres.toThread(), cmp.AllowUnexported(thread{})); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
 func TestRepoCreate(t *testing.T) {
-	dnmdb := db.NewDynamoDB()
-	tbl := db.CreateThreadTestTable(dnmdb, t)
-	defer db.DestroyTestTable(&tbl, t)
+	t.Parallel()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	sut := NewDynamoRepository(dnmdb, tbl.Name())
+	dnmdb := NewMockdynamoDB(ctrl)
+	es := NewMockelasticsearch(ctrl)
+	sut := NewDynamoRepository(dnmdb, es)
 
-	thrd := thread{
-		id:        "Thread#0",
-		teamID:    "Team#0",
-		createrID: "User#0",
-		title:     "thread0",
-		closed:    false,
-		createdAt: time.Now(),
-		updatedAt: time.Now(),
+	ctx := context.Background()
+	thrd := NewMockThread(ctrl)
+	req := repositoryCreateRequest{
+		thread: thrd,
 	}
-	if err := sut.create(
-		context.Background(),
-		repositoryCreateRequest{
-			thread: &thrd,
-		},
-	); err != nil {
+	dnmdb.EXPECT().Create(ctx, thrd).Return(nil)
+	es.EXPECT().PutThread(ctx, thrd).Return(nil)
+	if err := sut.create(ctx, req); err != nil {
 		t.Fatal(err)
-	}
-
-	var itm item
-	if err := tbl.Get("PK", "Team#0").Range("SK", dynamo.Equal, "Thread#0").One(&itm); err != nil {
-		t.Fatal(err)
-	}
-	opt := cmp.AllowUnexported(thread{})
-	if diff := cmp.Diff(&thrd, itm.toThread(), opt); diff != "" {
-		t.Fatal(diff)
-	}
-}
-
-func testRepo_update(
-	t *testing.T,
-	items []item,
-	req repositoryUpdateRequest,
-	errMsg string,
-) {
-	dnmdb := db.NewDynamoDB()
-	tbl := db.CreateThreadTestTable(dnmdb, t)
-	defer db.DestroyTestTable(&tbl, t)
-
-	sut := NewDynamoRepository(dnmdb, tbl.Name())
-
-	for _, itm := range items {
-		if err := tbl.Put(itm).Run(); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	err := sut.update(
-		context.Background(),
-		req,
-	)
-	if errMsg == "" {
-		if err != nil {
-			t.Fatal(err)
-		}
-	} else {
-		if err.Error() != errMsg {
-			t.Fatal(err)
-		}
-		return
-	}
-
-	var itm item
-	if err := tbl.Get("PK", req.thread.TeamID()).Range("SK", dynamo.Equal, req.thread.ID()).One(&itm); err != nil {
-		t.Fatal(err)
-	}
-	opt := cmp.AllowUnexported(thread{})
-	if diff := cmp.Diff(req.thread, itm.toThread(), opt); diff != "" {
-		t.Fatal(diff)
 	}
 }
 
 func TestRepo_update(t *testing.T) {
-	cases := []struct {
-		name   string
-		items  []item
-		req    repositoryUpdateRequest
-		errMsg string
-	}{
-		{
-			name: "normal",
-			items: []item{
-				{
-					PK:        "Team#0",
-					SK:        "Thread#0",
-					CreatorID: "User#0",
-					Content:   "thread0",
-					Closed:    "false",
-					CreatedAt: time.Date(2020, 10, 2, 0, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2020, 10, 2, 0, 0, 0, 0, time.UTC),
-				},
-				{
-					PK:        "Team#0",
-					SK:        "Thread#1",
-					CreatorID: "User#1",
-					Content:   "thread1",
-					Closed:    "true",
-					CreatedAt: time.Date(2020, 10, 3, 0, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2020, 10, 3, 12, 0, 0, 0, time.UTC),
-				},
-			},
-			req: repositoryUpdateRequest{
-				thread: &thread{
-					id:        "Thread#0",
-					title:     "thread0",
-					teamID:    "Team#0",
-					createrID: "User#0",
-					closed:    true,
-					createdAt: time.Date(2020, 10, 2, 0, 0, 0, 0, time.UTC),
-					updatedAt: time.Date(2020, 10, 2, 12, 0, 0, 0, time.UTC),
-				},
-			},
-		},
-		{
-			name: "dont create when not found",
-			items: []item{
-				{
-					PK:        "Team#0",
-					SK:        "Thread#1",
-					CreatorID: "User#1",
-					Content:   "thread1",
-					Closed:    "true",
-					CreatedAt: time.Date(2020, 10, 3, 0, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2020, 10, 3, 12, 0, 0, 0, time.UTC),
-				},
-			},
-			req: repositoryUpdateRequest{
-				thread: &thread{
-					id:        "Thread#0",
-					title:     "thread0",
-					teamID:    "Team#0",
-					createrID: "User#0",
-					closed:    true,
-					createdAt: time.Date(2020, 10, 2, 0, 0, 0, 0, time.UTC),
-					updatedAt: time.Date(2020, 10, 2, 12, 0, 0, 0, time.UTC),
-				},
-			},
-			errMsg: "ConditionalCheckFailedException: The conditional request failed",
-		},
-	}
+	t.Parallel()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			testRepo_update(t, c.items, c.req, c.errMsg)
-		})
+	dnmdb := NewMockdynamoDB(ctrl)
+	es := NewMockelasticsearch(ctrl)
+	sut := NewDynamoRepository(dnmdb, es)
+
+	ctx := context.Background()
+	thrd := NewMockThread(ctrl)
+	req := repositoryUpdateRequest{
+		thread: thrd,
+	}
+	dnmdb.EXPECT().Update(ctx, thrd).Return(nil)
+	es.EXPECT().PutThread(ctx, thrd).Return(nil)
+	if err := sut.update(ctx, req); err != nil {
+		t.Fatal(err)
 	}
 }

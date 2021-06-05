@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
@@ -13,9 +12,6 @@ import (
 )
 
 func TestUsecaseGet(t *testing.T) {
-	offsetTime := time.Date(2020, 9, 30, 0, 0, 0, 0, time.UTC)
-	offsetTimeStr := offsetTime.Format(time.RFC3339)
-
 	cases := []struct {
 		name     string
 		req      GetRequest
@@ -24,16 +20,21 @@ func TestUsecaseGet(t *testing.T) {
 		err      error
 	}{
 		{
-			name:     "normal",
-			req:      GetRequest{null.StringFrom(offsetTimeStr), null.NewBool(true, true)},
-			repoReq:  repositoryGetRequest{null.NewTime(offsetTime, true), null.NewBool(true, true)},
+			name: "normal",
+			req: GetRequest{
+				OffsetTime: null.String{},
+				Closed:     null.NewBool(true, true),
+				Size:       5,
+				From:       5,
+				Word:       "test",
+			},
+			repoReq: repositoryGetRequest{
+				closed: null.NewBool(true, true),
+				size:   5,
+				from:   5,
+				word:   "test",
+			},
 			callRepo: true,
-		},
-		{
-			name:     "last evaluated time format invalid",
-			req:      GetRequest{null.StringFrom("test"), null.Bool{}},
-			callRepo: false,
-			err:      ErrorTimeFormatInValid,
 		},
 	}
 
