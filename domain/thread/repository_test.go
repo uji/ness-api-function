@@ -187,7 +187,7 @@ func TestRepo_find(t *testing.T) {
 	}
 }
 
-func TestRepoCreate(t *testing.T) {
+func TestRepo_create(t *testing.T) {
 	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -201,7 +201,6 @@ func TestRepoCreate(t *testing.T) {
 	req := repositoryCreateRequest{
 		thread: thrd,
 	}
-	dnmdb.EXPECT().Create(ctx, thrd).Return(nil)
 	es.EXPECT().PutThread(ctx, thrd).Return(nil)
 	if err := sut.create(ctx, req); err != nil {
 		t.Fatal(err)
@@ -222,7 +221,6 @@ func TestRepo_update(t *testing.T) {
 	req := repositoryUpdateRequest{
 		thread: thrd,
 	}
-	dnmdb.EXPECT().Update(ctx, thrd).Return(nil)
 	es.EXPECT().PutThread(ctx, thrd).Return(nil)
 	if err := sut.update(ctx, req); err != nil {
 		t.Fatal(err)

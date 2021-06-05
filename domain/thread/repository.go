@@ -36,8 +36,6 @@ func (t DynamoDBThreadRow) toThread() Thread {
 type DynamoDB interface {
 	GetThreadsByIDs(ctx context.Context, ids []string) (map[string]DynamoDBThreadRow, error)
 	Find(ctx context.Context, id string) (DynamoDBThreadRow, error)
-	Create(ctx context.Context, thread Thread) error
-	Update(ctx context.Context, thread Thread) error
 }
 
 type SearchThreadIDsRequest struct {
@@ -128,15 +126,9 @@ func (d *repository) find(ctx context.Context, req repositoryFindRequest) (Threa
 }
 
 func (d *repository) create(ctx context.Context, req repositoryCreateRequest) error {
-	if err := d.dnm.Create(ctx, req.thread); err != nil {
-		return err
-	}
 	return d.es.PutThread(ctx, req.thread)
 }
 
 func (d *repository) update(ctx context.Context, req repositoryUpdateRequest) error {
-	if err := d.dnm.Update(ctx, req.thread); err != nil {
-		return err
-	}
 	return d.es.PutThread(ctx, req.thread)
 }
