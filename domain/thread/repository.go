@@ -3,7 +3,6 @@ package thread
 
 import (
 	"context"
-	"fmt"
 	"time"
 )
 
@@ -60,10 +59,6 @@ type ElasticSearch interface {
 }
 
 var _ Repository = &repository{}
-
-func repositoryError(err error) error {
-	return fmt.Errorf("repository: %w", err)
-}
 
 func NewDynamoRepository(
 	dnm DynamoDB,

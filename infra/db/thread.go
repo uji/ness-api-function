@@ -73,22 +73,22 @@ func newThreadSchema(thread thread.Thread) threadSchema {
 	}
 }
 
-func (t threadSchema) toThread() thread.Thread {
-	clsd := false
-	if t.Closed == "true" {
-		clsd = true
-	}
-
-	return thread.NewThread(
-		t.SK,
-		thread.TeamID(t.PK),
-		thread.UserID(t.CreatorID),
-		t.Content,
-		clsd,
-		t.CreatedAt,
-		t.UpdatedAt,
-	)
-}
+// func (t threadSchema) toThread() thread.Thread {
+// 	clsd := false
+// 	if t.Closed == "true" {
+// 		clsd = true
+// 	}
+//
+// 	return thread.NewThread(
+// 		t.SK,
+// 		thread.TeamID(t.PK),
+// 		thread.UserID(t.CreatorID),
+// 		t.Content,
+// 		clsd,
+// 		t.CreatedAt,
+// 		t.UpdatedAt,
+// 	)
+// }
 
 type threadQuery struct {
 	db  *dynamo.DB
