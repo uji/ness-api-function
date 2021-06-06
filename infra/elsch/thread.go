@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"io"
 	"io/ioutil"
 	"strings"
 	"time"
@@ -11,6 +13,10 @@ import (
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/uji/ness-api-function/domain/thread"
 	"github.com/uji/ness-api-function/reqctx"
+)
+
+var (
+	ErrThreadNotFound = errors.New("Thread not found")
 )
 
 type putThreadRequest struct {
@@ -58,11 +64,96 @@ func (c *Client) DeleteThread(ctx context.Context, threadID string) error {
 	return err
 }
 
-func (c *Client) SearchThreadIDs(
+func (c *Client) FindThread(ctx context.Context, id string) (thread.ElasticSearchThreadRow, error) {
+	ainfo, err := reqctx.GetAuthenticationInfo(ctx)
+	if err != nil {
+		return thread.ElasticSearchThreadRow{}, err
+	}
+
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"bool": map[string]interface{}{
+				"must": []map[string]interface{}{
+					{
+						"match_phrase": map[string]string{
+							"id": id,
+						},
+					},
+					{
+						"match_phrase": map[string]string{
+							"teamID": ainfo.TeamID(),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(query); err != nil {
+		return thread.ElasticSearchThreadRow{}, err
+	}
+	size := 1
+
+	res, err := esapi.SearchRequest{
+		Index: []string{string(c.threadIndexName)},
+		Body:  &buf,
+		Size:  &size,
+	}.Do(ctx, c.client)
+	if err != nil {
+		return thread.ElasticSearchThreadRow{}, err
+	}
+
+	bytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		return thread.ElasticSearchThreadRow{}, err
+	}
+
+	rslt := new(struct {
+		Hits struct {
+			Hits []struct {
+				ID     string `json:"_id"`
+				Source struct {
+					ID        string    `json:"id"`
+					TeamID    string    `json:"teamID"`
+					CreatorID string    `json:"creatorID"`
+					Title     string    `json:"title"`
+					Closed    bool      `json:"closed"`
+					CreatedAt time.Time `json:"createdAt"`
+					UpdatedAt time.Time `json:"updatedAt"`
+				} `json:"_source"`
+			} `json:"hits"`
+		} `json:"hits"`
+	})
+
+	if err := json.Unmarshal(bytes, rslt); err != nil {
+		return thread.ElasticSearchThreadRow{}, err
+	}
+
+	if len(rslt.Hits.Hits) == 0 {
+		return thread.ElasticSearchThreadRow{}, ErrThreadNotFound
+	}
+
+	rows := make([]thread.ElasticSearchThreadRow, len(rslt.Hits.Hits))
+	for i, row := range rslt.Hits.Hits {
+		rows[i] = thread.ElasticSearchThreadRow{
+			Id:        row.ID,
+			TeamID:    row.Source.TeamID,
+			CreaterID: row.Source.CreatorID,
+			Title:     row.Source.Title,
+			Closed:    row.Source.Closed,
+			CreatedAt: row.Source.CreatedAt,
+			UpdatedAt: row.Source.UpdatedAt,
+		}
+	}
+	return rows[0], nil
+}
+
+func (c *Client) SearchThreads(
 	ctx context.Context,
 	req thread.SearchThreadIDsRequest,
 	opts ...thread.SearchThreadIDsOption,
-) ([]string, error) {
+) ([]thread.ElasticSearchThreadRow, error) {
 	ainfo, err := reqctx.GetAuthenticationInfo(ctx)
 	if err != nil {
 		return nil, err
@@ -131,7 +222,16 @@ func (c *Client) SearchThreadIDs(
 	rslt := new(struct {
 		Hits struct {
 			Hits []struct {
-				ID string `json:"_id"`
+				ID     string `json:"_id"`
+				Source struct {
+					ID        string    `json:"id"`
+					TeamID    string    `json:"teamID"`
+					CreatorID string    `json:"creatorID"`
+					Title     string    `json:"title"`
+					Closed    bool      `json:"closed"`
+					CreatedAt time.Time `json:"createdAt"`
+					UpdatedAt time.Time `json:"updatedAt"`
+				} `json:"_source"`
 			} `json:"hits"`
 		} `json:"hits"`
 	})
@@ -140,9 +240,17 @@ func (c *Client) SearchThreadIDs(
 		return nil, err
 	}
 
-	ids := make([]string, len(rslt.Hits.Hits))
-	for i, h := range rslt.Hits.Hits {
-		ids[i] = h.ID
+	rows := make([]thread.ElasticSearchThreadRow, len(rslt.Hits.Hits))
+	for i, row := range rslt.Hits.Hits {
+		rows[i] = thread.ElasticSearchThreadRow{
+			Id:        row.ID,
+			TeamID:    row.Source.TeamID,
+			CreaterID: row.Source.CreatorID,
+			Title:     row.Source.Title,
+			Closed:    row.Source.Closed,
+			CreatedAt: row.Source.CreatedAt,
+			UpdatedAt: row.Source.UpdatedAt,
+		}
 	}
-	return ids, nil
+	return rows, nil
 }

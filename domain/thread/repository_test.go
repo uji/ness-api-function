@@ -100,15 +100,12 @@ func Test_get(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			dnmdb := NewMockdynamoDB(ctrl)
-			es := NewMockelasticsearch(ctrl)
-			sut := NewDynamoRepository(dnmdb, es)
+			es := NewMockElasticSearch(ctrl)
+			sut := NewRepository(es)
 
 			ctx := context.Background()
-			thrdIDs := []string{"1", "2"}
-			es.EXPECT().SearchThreadIDs(ctx, c.esReq, c.esOpts).Return(thrdIDs, nil)
-			dnmdbrows := map[string]DynamoDBThreadRow{
-				"Thread#0": {
+			rows := []ElasticSearchThreadRow{
+				{
 					Id:        "Thread#0",
 					TeamID:    "Team#0",
 					CreaterID: "User#0",
@@ -118,14 +115,14 @@ func Test_get(t *testing.T) {
 					UpdatedAt: time.Now(),
 				},
 			}
-			dnmdb.EXPECT().GetThreadsByIDs(ctx, thrdIDs).Return(dnmdbrows, nil)
+			es.EXPECT().SearchThreads(ctx, c.esReq, c.esOpts).Return(rows, nil)
 			res, err := sut.get(ctx, c.req)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			for _, r := range res {
-				if diff := cmp.Diff(r, dnmdbrows[r.ID()].toThread(), cmp.AllowUnexported(thread{})); diff != "" {
+			for i, r := range res {
+				if diff := cmp.Diff(r, rows[i].toThread(), cmp.AllowUnexported(thread{})); diff != "" {
 					t.Fatal(diff)
 				}
 			}
@@ -135,14 +132,13 @@ func Test_get(t *testing.T) {
 	t.Run("ids not found", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		dnmdb := NewMockdynamoDB(ctrl)
-		es := NewMockelasticsearch(ctrl)
-		sut := NewDynamoRepository(dnmdb, es)
+		es := NewMockElasticSearch(ctrl)
+		sut := NewRepository(es)
 
 		ctx := context.Background()
-		thrdIDs := []string{}
+		rows := []ElasticSearchThreadRow{}
 		req := SearchThreadIDsRequest{}
-		es.EXPECT().SearchThreadIDs(ctx, req).Return(thrdIDs, nil)
+		es.EXPECT().SearchThreads(ctx, req).Return(rows, nil)
 		res, err := sut.get(ctx, repositoryGetRequest{})
 		if err != nil {
 			t.Fatal(err)
@@ -159,16 +155,15 @@ func TestRepo_find(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	dnmdb := NewMockdynamoDB(ctrl)
-	es := NewMockelasticsearch(ctrl)
-	sut := NewDynamoRepository(dnmdb, es)
+	es := NewMockElasticSearch(ctrl)
+	sut := NewRepository(es)
 
 	ctx := context.Background()
 	req := repositoryFindRequest{
 		teamID:   "Team#0",
 		threadID: "Thread#0",
 	}
-	dnmdbres := DynamoDBThreadRow{
+	row := ElasticSearchThreadRow{
 		Id:        "Thread#0",
 		TeamID:    "Team#0",
 		CreaterID: "User#0",
@@ -177,12 +172,12 @@ func TestRepo_find(t *testing.T) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	dnmdb.EXPECT().Find(ctx, "Thread#0").Return(dnmdbres, nil)
+	es.EXPECT().FindThread(ctx, "Thread#0").Return(row, nil)
 	res, err := sut.find(ctx, req)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(res, dnmdbres.toThread(), cmp.AllowUnexported(thread{})); diff != "" {
+	if diff := cmp.Diff(res, row.toThread(), cmp.AllowUnexported(thread{})); diff != "" {
 		t.Fatal(diff)
 	}
 }
@@ -192,9 +187,8 @@ func TestRepo_create(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	dnmdb := NewMockdynamoDB(ctrl)
-	es := NewMockelasticsearch(ctrl)
-	sut := NewDynamoRepository(dnmdb, es)
+	es := NewMockElasticSearch(ctrl)
+	sut := NewRepository(es)
 
 	ctx := context.Background()
 	thrd := NewMockThread(ctrl)
@@ -212,9 +206,8 @@ func TestRepo_update(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	dnmdb := NewMockdynamoDB(ctrl)
-	es := NewMockelasticsearch(ctrl)
-	sut := NewDynamoRepository(dnmdb, es)
+	es := NewMockElasticSearch(ctrl)
+	sut := NewRepository(es)
 
 	ctx := context.Background()
 	thrd := NewMockThread(ctrl)

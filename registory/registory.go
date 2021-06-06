@@ -28,8 +28,7 @@ func NewRegisterdServer() http.Handler {
 
 	usrRp := usr.NewDynamoRepository(dnmdb, db.UserTableName)
 	user := usr.NewUsecase(fbsauth, usr.DefaultGenerator, usrRp)
-	thrdQr := db.NewThreadQuery(dnmdb, db.ThreadTableName)
-	thrdRp := thread.NewDynamoRepository(thrdQr, es)
+	thrdRp := thread.NewRepository(es)
 	thrd := thread.NewUsecase(thread.DefaultGenerator, thrdRp)
 
 	rslv := graph.NewResolver(user, thrd)
@@ -49,8 +48,7 @@ func NewRegisterdServerWithDammyAuth(teamID, userID string) http.Handler {
 
 	usrRp := usr.NewDynamoRepository(dnmdb, db.UserTableName)
 	user := usr.NewUsecase(fbsauth, usr.DefaultGenerator, usrRp)
-	thrdQr := db.NewThreadQuery(dnmdb, db.ThreadTableName)
-	thrdRp := thread.NewDynamoRepository(thrdQr, es)
+	thrdRp := thread.NewRepository(es)
 	thrd := thread.NewUsecase(thread.DefaultGenerator, thrdRp)
 
 	rslv := graph.NewResolver(user, thrd)

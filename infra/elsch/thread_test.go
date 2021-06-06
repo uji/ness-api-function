@@ -201,7 +201,7 @@ func TestDeleteThread(t *testing.T) {
 	}
 }
 
-func TestGetThreads(t *testing.T) {
+func TestSearchThreads(t *testing.T) {
 	type threadSchema struct {
 		ID        string    `json:"id"`
 		TeamID    string    `json:"teamID"`
@@ -219,13 +219,15 @@ func TestGetThreads(t *testing.T) {
 	tid2 := uuid.New().String()
 	myUserID := uuid.New().String()
 	uid2 := uuid.New().String()
+	time1 := time.Now()
+	time2 := time.Now()
 
 	cases := []struct {
 		name string
 		data []threadSchema
 		req  thread.SearchThreadIDsRequest
 		opts []thread.SearchThreadIDsOption
-		res  []string
+		res  []thread.ElasticSearchThreadRow
 	}{
 		{
 			name: "normal",
@@ -236,15 +238,25 @@ func TestGetThreads(t *testing.T) {
 					CreatorID: myUserID,
 					Title:     "test",
 					Closed:    true,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+					CreatedAt: time1,
+					UpdatedAt: time1,
 				},
 			},
 			req: thread.SearchThreadIDsRequest{
 				Size: 10,
 				From: 0,
 			},
-			res: []string{id1},
+			res: []thread.ElasticSearchThreadRow{
+				{
+					Id:        id1,
+					TeamID:    myTeamID,
+					CreaterID: myUserID,
+					Title:     "test",
+					Closed:    true,
+					CreatedAt: time1,
+					UpdatedAt: time1,
+				},
+			},
 		},
 		{
 			name: "specify word",
@@ -255,8 +267,8 @@ func TestGetThreads(t *testing.T) {
 					CreatorID: myUserID,
 					Title:     "test",
 					Closed:    true,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+					CreatedAt: time1,
+					UpdatedAt: time1,
 				},
 				{
 					ID:        id2,
@@ -264,8 +276,8 @@ func TestGetThreads(t *testing.T) {
 					CreatorID: myUserID,
 					Title:     "test thread",
 					Closed:    true,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+					CreatedAt: time2,
+					UpdatedAt: time2,
 				},
 				{
 					ID:        id3,
@@ -282,7 +294,26 @@ func TestGetThreads(t *testing.T) {
 				From: 0,
 				Word: "test",
 			},
-			res: []string{id1, id2},
+			res: []thread.ElasticSearchThreadRow{
+				{
+					Id:        id1,
+					TeamID:    myTeamID,
+					CreaterID: myUserID,
+					Title:     "test",
+					Closed:    true,
+					CreatedAt: time1,
+					UpdatedAt: time1,
+				},
+				{
+					Id:        id2,
+					TeamID:    myTeamID,
+					CreaterID: myUserID,
+					Title:     "test thread",
+					Closed:    true,
+					CreatedAt: time2,
+					UpdatedAt: time2,
+				},
+			},
 		},
 		{
 			name: "use closed only option",
@@ -293,8 +324,8 @@ func TestGetThreads(t *testing.T) {
 					CreatorID: myUserID,
 					Title:     "test1",
 					Closed:    true,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+					CreatedAt: time1,
+					UpdatedAt: time1,
 				},
 				{
 					ID:        id2,
@@ -302,8 +333,8 @@ func TestGetThreads(t *testing.T) {
 					CreatorID: myUserID,
 					Title:     "test2",
 					Closed:    true,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+					CreatedAt: time2,
+					UpdatedAt: time2,
 				},
 				{
 					ID:        id3,
@@ -323,7 +354,26 @@ func TestGetThreads(t *testing.T) {
 			opts: []thread.SearchThreadIDsOption{
 				thread.SearchThreadIDsOptionOnlyClosed,
 			},
-			res: []string{id1, id2},
+			res: []thread.ElasticSearchThreadRow{
+				{
+					Id:        id1,
+					TeamID:    myTeamID,
+					CreaterID: myUserID,
+					Title:     "test1",
+					Closed:    true,
+					CreatedAt: time1,
+					UpdatedAt: time1,
+				},
+				{
+					Id:        id2,
+					TeamID:    myTeamID,
+					CreaterID: myUserID,
+					Title:     "test2",
+					Closed:    true,
+					CreatedAt: time2,
+					UpdatedAt: time2,
+				},
+			},
 		},
 		{
 			name: "use opened only option",
@@ -352,8 +402,8 @@ func TestGetThreads(t *testing.T) {
 					CreatorID: myUserID,
 					Title:     "test3",
 					Closed:    false,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+					CreatedAt: time1,
+					UpdatedAt: time1,
 				},
 			},
 			req: thread.SearchThreadIDsRequest{
@@ -364,7 +414,17 @@ func TestGetThreads(t *testing.T) {
 			opts: []thread.SearchThreadIDsOption{
 				thread.SearchThreadIDsOptionOnlyOpened,
 			},
-			res: []string{id3},
+			res: []thread.ElasticSearchThreadRow{
+				{
+					Id:        id3,
+					TeamID:    myTeamID,
+					CreaterID: myUserID,
+					Title:     "test3",
+					Closed:    false,
+					CreatedAt: time1,
+					UpdatedAt: time1,
+				},
+			},
 		},
 		{
 			name: "size is smaller than total",
@@ -384,15 +444,25 @@ func TestGetThreads(t *testing.T) {
 					CreatorID: myUserID,
 					Title:     "test2",
 					Closed:    false,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+					CreatedAt: time1,
+					UpdatedAt: time1,
 				},
 			},
 			req: thread.SearchThreadIDsRequest{
 				Size: 1,
 				From: 1,
 			},
-			res: []string{id2},
+			res: []thread.ElasticSearchThreadRow{
+				{
+					Id:        id2,
+					TeamID:    myTeamID,
+					CreaterID: myUserID,
+					Title:     "test2",
+					Closed:    false,
+					CreatedAt: time1,
+					UpdatedAt: time1,
+				},
+			},
 		},
 		{
 			name: "include other users thread",
@@ -403,8 +473,8 @@ func TestGetThreads(t *testing.T) {
 					CreatorID: myUserID,
 					Title:     "test1",
 					Closed:    true,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+					CreatedAt: time1,
+					UpdatedAt: time1,
 				},
 				{
 					ID:        id2,
@@ -412,15 +482,34 @@ func TestGetThreads(t *testing.T) {
 					CreatorID: uid2,
 					Title:     "test2",
 					Closed:    true,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+					CreatedAt: time2,
+					UpdatedAt: time2,
 				},
 			},
 			req: thread.SearchThreadIDsRequest{
 				Size: 10,
 				From: 0,
 			},
-			res: []string{id1, id2},
+			res: []thread.ElasticSearchThreadRow{
+				{
+					Id:        id1,
+					TeamID:    myTeamID,
+					CreaterID: myUserID,
+					Title:     "test1",
+					Closed:    true,
+					CreatedAt: time1,
+					UpdatedAt: time1,
+				},
+				{
+					Id:        id2,
+					TeamID:    myTeamID,
+					CreaterID: uid2,
+					Title:     "test2",
+					Closed:    true,
+					CreatedAt: time2,
+					UpdatedAt: time2,
+				},
+			},
 		},
 		{
 			name: "include other teams thread",
@@ -431,8 +520,8 @@ func TestGetThreads(t *testing.T) {
 					CreatorID: myUserID,
 					Title:     "test1",
 					Closed:    true,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+					CreatedAt: time1,
+					UpdatedAt: time1,
 				},
 				{
 					ID:        id2,
@@ -448,7 +537,17 @@ func TestGetThreads(t *testing.T) {
 				Size: 10,
 				From: 0,
 			},
-			res: []string{id1},
+			res: []thread.ElasticSearchThreadRow{
+				{
+					Id:        id1,
+					TeamID:    myTeamID,
+					CreaterID: myUserID,
+					Title:     "test1",
+					Closed:    true,
+					CreatedAt: time1,
+					UpdatedAt: time1,
+				},
+			},
 		},
 		{
 			name: "no data",
@@ -457,7 +556,7 @@ func TestGetThreads(t *testing.T) {
 				Size: 10,
 				From: 0,
 			},
-			res: []string{},
+			res: []thread.ElasticSearchThreadRow{},
 		},
 	}
 
@@ -494,8 +593,154 @@ func TestGetThreads(t *testing.T) {
 				}
 			}
 
-			res, err := clt.SearchThreadIDs(ctx, c.req, c.opts...)
+			res, err := clt.SearchThreads(ctx, c.req, c.opts...)
 			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(c.res, res); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
+}
+
+func TestFindThread(t *testing.T) {
+	type threadSchema struct {
+		ID        string    `json:"id"`
+		TeamID    string    `json:"teamID"`
+		CreatorID string    `json:"creatorID"`
+		Title     string    `json:"title"`
+		Closed    bool      `json:"closed"`
+		CreatedAt time.Time `json:"createdAt"`
+		UpdatedAt time.Time `json:"updatedAt"`
+	}
+
+	id1 := uuid.New().String()
+	myTeamID := uuid.New().String()
+	tid2 := uuid.New().String()
+	myUserID := uuid.New().String()
+	uid2 := uuid.New().String()
+	time1 := time.Now()
+
+	cases := []struct {
+		name string
+		data []threadSchema
+		req  string
+		res  thread.ElasticSearchThreadRow
+		err  error
+	}{
+		{
+			name: "normal",
+			data: []threadSchema{
+				{
+					ID:        id1,
+					TeamID:    myTeamID,
+					CreatorID: myUserID,
+					Title:     "test",
+					Closed:    true,
+					CreatedAt: time1,
+					UpdatedAt: time1,
+				},
+				{
+					ID:        uuid.New().String(),
+					TeamID:    myTeamID,
+					CreatorID: myUserID,
+					Title:     "test2",
+					Closed:    true,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+			},
+			req: id1,
+			res: thread.ElasticSearchThreadRow{
+				Id:        id1,
+				TeamID:    myTeamID,
+				CreaterID: myUserID,
+				Title:     "test",
+				Closed:    true,
+				CreatedAt: time1,
+				UpdatedAt: time1,
+			},
+		},
+		{
+			name: "same teams other users threads can find",
+			data: []threadSchema{
+				{
+					ID:        id1,
+					TeamID:    myTeamID,
+					CreatorID: uid2,
+					Title:     "test",
+					Closed:    true,
+					CreatedAt: time1,
+					UpdatedAt: time1,
+				},
+			},
+			req: id1,
+			res: thread.ElasticSearchThreadRow{
+				Id:        id1,
+				TeamID:    myTeamID,
+				CreaterID: uid2,
+				Title:     "test",
+				Closed:    true,
+				CreatedAt: time1,
+				UpdatedAt: time1,
+			},
+		},
+		{
+			name: "other teams threads can`t find",
+			data: []threadSchema{
+				{
+					ID:        id1,
+					TeamID:    tid2,
+					CreatorID: uid2,
+					Title:     "test",
+					Closed:    true,
+					CreatedAt: time1,
+					UpdatedAt: time1,
+				},
+			},
+			req: id1,
+			res: thread.ElasticSearchThreadRow{},
+			err: ErrThreadNotFound,
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			clt, err := NewClient(IndexName(uuid.New().String()))
+			if err != nil {
+				t.Fatal(err)
+			}
+			CreateIndexForTest(t, clt)
+			defer DeleteIndexForTest(t, clt)
+
+			ctx := reqctx.NewRequestContext(
+				context.Background(),
+				reqctx.NewAuthenticationInfo(myTeamID, myUserID),
+			)
+
+			// create test data
+			for _, d := range c.data {
+				bytes, err := json.Marshal(d)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				_, err = esapi.IndexRequest{
+					Index:      string(clt.threadIndexName),
+					DocumentID: d.ID,
+					Body:       strings.NewReader(string(bytes)),
+					Refresh:    "true",
+				}.Do(ctx, clt.client)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			res, err := clt.FindThread(ctx, c.req)
+			if err != c.err {
 				t.Fatal(err)
 			}
 

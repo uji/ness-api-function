@@ -7,35 +7,7 @@ import (
 )
 
 type repository struct {
-	dnm DynamoDB
-	es  ElasticSearch
-}
-
-type DynamoDBThreadRow struct {
-	Id        string
-	TeamID    string
-	CreaterID string
-	Title     string
-	Closed    bool
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
-func (t DynamoDBThreadRow) toThread() Thread {
-	return &thread{
-		id:        t.Id,
-		teamID:    TeamID(t.TeamID),
-		createrID: UserID(t.CreaterID),
-		title:     t.Title,
-		closed:    t.Closed,
-		createdAt: t.CreatedAt,
-		updatedAt: t.UpdatedAt,
-	}
-}
-
-type DynamoDB interface {
-	GetThreadsByIDs(ctx context.Context, ids []string) (map[string]DynamoDBThreadRow, error)
-	Find(ctx context.Context, id string) (DynamoDBThreadRow, error)
+	es ElasticSearch
 }
 
 type SearchThreadIDsRequest struct {
@@ -51,18 +23,40 @@ const (
 	SearchThreadIDsOptionOnlyOpened
 )
 
+type ElasticSearchThreadRow struct {
+	Id        string
+	TeamID    string
+	CreaterID string
+	Title     string
+	Closed    bool
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (t ElasticSearchThreadRow) toThread() Thread {
+	return &thread{
+		id:        t.Id,
+		teamID:    TeamID(t.TeamID),
+		createrID: UserID(t.CreaterID),
+		title:     t.Title,
+		closed:    t.Closed,
+		createdAt: t.CreatedAt,
+		updatedAt: t.UpdatedAt,
+	}
+}
+
 type ElasticSearch interface {
-	SearchThreadIDs(context.Context, SearchThreadIDsRequest, ...SearchThreadIDsOption) ([]string, error)
+	FindThread(ctx context.Context, id string) (ElasticSearchThreadRow, error)
+	SearchThreads(context.Context, SearchThreadIDsRequest, ...SearchThreadIDsOption) ([]ElasticSearchThreadRow, error)
 	PutThread(context.Context, Thread) error
 }
 
 var _ Repository = &repository{}
 
-func NewDynamoRepository(
-	dnm DynamoDB,
+func NewRepository(
 	es ElasticSearch,
 ) *repository {
-	return &repository{dnm, es}
+	return &repository{es}
 }
 
 func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Thread, error) {
@@ -86,31 +80,21 @@ func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Threa
 		}
 	}
 
-	ids, err := d.es.SearchThreadIDs(ctx, esreq, opts...)
+	rslts, err := d.es.SearchThreads(ctx, esreq, opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(ids) == 0 {
-		return []Thread{}, nil
-	}
-
-	rslt, err := d.dnm.GetThreadsByIDs(ctx, ids)
-	if err != nil {
-		return nil, err
-	}
-
-	res := make([]Thread, len(ids))
-	for i, id := range ids {
-		t := rslt[id]
+	res := make([]Thread, len(rslts))
+	for i, r := range rslts {
 		res[i] = &thread{
-			id:        t.Id,
-			teamID:    TeamID(t.TeamID),
-			createrID: UserID(t.CreaterID),
-			title:     t.Title,
-			closed:    t.Closed,
-			createdAt: t.CreatedAt,
-			updatedAt: t.UpdatedAt,
+			id:        r.Id,
+			teamID:    TeamID(r.TeamID),
+			createrID: UserID(r.CreaterID),
+			title:     r.Title,
+			closed:    r.Closed,
+			createdAt: r.CreatedAt,
+			updatedAt: r.UpdatedAt,
 		}
 	}
 
@@ -118,7 +102,7 @@ func (d *repository) get(ctx context.Context, req repositoryGetRequest) ([]Threa
 }
 
 func (d *repository) find(ctx context.Context, req repositoryFindRequest) (Thread, error) {
-	thrd, err := d.dnm.Find(ctx, req.threadID)
+	thrd, err := d.es.FindThread(ctx, req.threadID)
 	if err != nil {
 		return nil, err
 	}
