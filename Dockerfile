@@ -19,4 +19,5 @@ ENV ELASTICSEARCH_PASSWORD ""
 
 RUN go install github.com/golang/mock/mockgen@v1.4.4
 RUN go install github.com/99designs/gqlgen@v0.12.2
+RUN go install github.com/matryer/moq@latest
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /go/bin v1.31.0
