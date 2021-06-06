@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"strings"
 	"time"
 
@@ -214,7 +213,7 @@ func (c *Client) SearchThreads(
 		return nil, err
 	}
 
-	bytes, err := ioutil.ReadAll(res.Body) // TODO: use io.ReadAll
+	bytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
