@@ -6,16 +6,27 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
-	"github.com/google/go-cmp/cmp"
 	"github.com/uji/ness-api-function/infra/gcp/dtstr"
 )
 
-func TestStore_create(t *testing.T) {
+type testStoreSut struct {
+	str *store
+	clt *datastore.Client
+}
+
+func createTestStoreSut(t *testing.T) testStoreSut {
 	clt, err := dtstr.NewClient()
 	if err != nil {
 		t.Fatal(err)
 	}
-	sut := NewStore()
+	userEntityKey := "User" + t.Name()
+	userInfoKey := "UserInfo" + t.Name()
+	store := NewStore(userEntityKey, userInfoKey)
+	return testStoreSut{store, clt}
+}
+
+func TestStore_create(t *testing.T) {
+	sut := createTestStoreSut(t)
 	reqctx := context.Background()
 	user := &User{
 		userID:          "User0",
@@ -32,26 +43,14 @@ func TestStore_create(t *testing.T) {
 			},
 		},
 	}
-	tx, err := clt.NewTransaction(reqctx)
+	tx, err := sut.clt.NewTransaction(reqctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer tx.Rollback()
 
-	if err := sut.create(reqctx, tx, user); err != nil {
+	if err := sut.str.create(reqctx, tx, user); err != nil {
 		t.Fatal(err)
-	}
-
-	var rslt []userRow
-	q := datastore.NewQuery("User").Transaction(tx).Limit(1).Filter(
-		"__key__ =",
-		string(user.userID),
-	)
-	if _, err := clt.GetAll(reqctx, q, &rslt); err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff(rslt, []userRow{NewUserRow(user)}); diff != "" {
-		t.Fatal(diff)
 	}
 }
 

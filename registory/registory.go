@@ -28,7 +28,7 @@ func NewRegisterdServer() http.Handler {
 	if err != nil {
 		panic(err)
 	}
-	store := usr.NewStore()
+	store := usr.NewStore(datastore, "User", "UserInfo", "Member")
 	usrRp := usr.NewRepository(datastore, store)
 	user := usr.NewUsecase(fbsauth, usr.DefaultGenerator, usrRp)
 	thrdRp := thread.NewRepository(es)
@@ -51,7 +51,7 @@ func NewRegisterdServerWithDammyAuth(teamID, userID string) http.Handler {
 	if err != nil {
 		panic(err)
 	}
-	store := usr.NewStore()
+	store := usr.NewStore(datastore, "User", "UserInfo", "Member")
 	usrRp := usr.NewRepository(datastore, store)
 	user := usr.NewUsecase(fbsauth, usr.DefaultGenerator, usrRp)
 	thrdRp := thread.NewRepository(es)
