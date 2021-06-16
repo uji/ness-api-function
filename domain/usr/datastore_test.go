@@ -21,7 +21,8 @@ func createTestStoreSut(t *testing.T) testStoreSut {
 	}
 	userEntityKey := "User" + t.Name()
 	userInfoKey := "UserInfo" + t.Name()
-	store := NewStore(userEntityKey, userInfoKey)
+	memberKey := "Member" + t.Name()
+	store := NewStore(clt, userEntityKey, userInfoKey, memberKey)
 	return testStoreSut{store, clt}
 }
 
