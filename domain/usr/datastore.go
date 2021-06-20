@@ -2,6 +2,7 @@ package usr
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"cloud.google.com/go/datastore"
@@ -87,6 +88,9 @@ func (s *store) find(ctx context.Context, tx *datastore.Transaction, userID User
 	key := datastore.NameKey(s.userInfoKeyName, string(userID), parentKey)
 	rslt := userRow{}
 	if err := tx.Get(key, &rslt); err != nil {
+		if err == datastore.ErrNoSuchEntity {
+			return nil, fmt.Errorf("store error: %w", ErrNotFoundUser)
+		}
 		return nil, err
 	}
 	return rslt.toUser(), nil
@@ -97,7 +101,8 @@ func (s *store) createMembers(ctx context.Context, tx *datastore.Transaction, us
 	muts := make([]*datastore.Mutation, len(user.members))
 	for i, m := range user.members {
 		key := datastore.NameKey(s.memberKeyName, string(m.teamID), parentKey)
-		muts[i] = datastore.NewUpsert(key, NewMemberRow(m))
+		row := NewMemberRow(m)
+		muts[i] = datastore.NewUpsert(key, &row)
 	}
 	_, err := tx.Mutate(muts...)
 	return err

@@ -10,7 +10,7 @@ import (
 
 type repository struct {
 	datastore *datastore.Client
-	cmd       Store
+	store     Store
 }
 
 type Store interface {
@@ -28,10 +28,10 @@ func NewRepository(datastore *datastore.Client, cmd Store) *repository {
 
 func (r *repository) create(ctx context.Context, user *User) error {
 	_, err := r.datastore.RunInTransaction(ctx, func(tx *datastore.Transaction) error {
-		if err := r.cmd.create(ctx, tx, user); err != nil {
+		if err := r.store.create(ctx, tx, user); err != nil {
 			return err
 		}
-		return r.cmd.createMembers(ctx, tx, user)
+		return r.store.createMembers(ctx, tx, user)
 	})
 	return err
 }
@@ -39,11 +39,11 @@ func (r *repository) create(ctx context.Context, user *User) error {
 func (r *repository) find(ctx context.Context, userID UserID) (*User, error) {
 	var res *User
 	_, err := r.datastore.RunInTransaction(ctx, func(tx *datastore.Transaction) error {
-		user, err := r.cmd.find(ctx, tx, userID)
+		user, err := r.store.find(ctx, tx, userID)
 		if err != nil {
 			return err
 		}
-		members, err := r.cmd.findMembers(ctx, tx, userID)
+		members, err := r.store.findMembers(ctx, tx, userID)
 		if err != nil {
 			return err
 		}

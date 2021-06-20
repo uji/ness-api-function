@@ -2,6 +2,7 @@ package usr
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -44,8 +45,18 @@ func (m *MiddleWare) Handle(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
+
 		user, err := m.uc.Find(r.Context(), uid)
-		if err != nil {
+		if errors.Is(err, ErrNotFoundUser) {
+			ctx := reqctx.NewRequestContext(r.Context(), reqctx.NewAuthenticationInfo("Team#0", uid))
+			user, err = m.uc.Create(ctx, CreateRequest{
+				Name: "test",
+			})
+			if err != nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+		} else if err != nil {
 			next.ServeHTTP(w, r)
 			return
 		}
